@@ -120,3 +120,11 @@ Gets replaced with
     sizes={[sm_b0s, md_md_b0s]}
 />
 ```
+
+### Implementation
+
+The implementation consists of three parts:
+
+1. The `register` function chain, an export to use in the library source code
+2. Exposing `something.config.js` file to register the styles in vite
+3. Providing a file ending specific injection functionality, e.g. `.svelte`, `.jsx`, `.ts` etc.
