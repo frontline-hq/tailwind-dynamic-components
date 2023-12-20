@@ -1,0 +1,63 @@
+{
+    "name": "@frontline-hq/tailwind-dynamic-components",
+    "private": true,
+    "version": "0.0.2",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.mjs",
+    "exports": {
+        ".": {
+            "require": "./dist/index.cjs",
+            "import": "./dist/index.mjs"
+        }
+    },
+    "types": "./dist/index.d.ts",
+    "scripts": {
+        "dev": "vite --host",
+        "build": "rimraf dist && tsc && vite build && dts-bundle-generator --config ./dts-bundle-generator.config.ts",
+        "test": "vitest",
+        "test:coverage": "vitest --coverage",
+        "lint:scripts": "eslint . --ext .ts",
+        "format:scripts": "prettier . --write",
+        "format": "npm run format:scripts",
+        "prepare": "husky install && husky set .husky/pre-commit 'npx lint-staged' && git add .husky/pre-commit",
+        "uninstall-husky": "npm uninstall husky --no-save && git config --unset core.hooksPath && npx rimraf .husky"
+    },
+    "devDependencies": {
+        "@types/estree": "^1.0.5",
+        "@types/jsdom": "^21.1.6",
+        "@types/lodash.merge": "^4.6.9",
+        "@types/node": "^20.10.3",
+        "@typescript-eslint/eslint-plugin": "^6.13.1",
+        "@typescript-eslint/parser": "^6.13.1",
+        "@vitest/coverage-v8": "^0.34.6",
+        "ast-types": "^0.14.2",
+        "astring": "^1.8.6",
+        "base-x": "^4.0.0",
+        "dts-bundle-generator": "^8.1.2",
+        "eslint": "^8.55.0",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-prettier": "^5.0.1",
+        "estree-walker": "^3.0.3",
+        "husky": "^8.0.3",
+        "lint-staged": "^13.3.0",
+        "lodash.merge": "^4.6.2",
+        "magic-string": "^0.30.5",
+        "magicast": "^0.3.2",
+        "prettier": "^3.1.0",
+        "prettier-plugin-svelte": "^3.1.2",
+        "recast": "^0.23.4",
+        "rimraf": "^5.0.5",
+        "rollup": "^4.6.1",
+        "rollup-plugin-polyfill-node": "^0.13.0",
+        "svelte": "^4.2.8",
+        "ts-dedent": "^2.2.0",
+        "ts-node": "^10.9.1",
+        "typescript": "^5.3.2",
+        "vite": "^4.5.1",
+        "vitest": "^0.34.6"
+    },
+    "dependencies": {
+        "@sveltejs/kit": "^1.27.6",
+        "vitefu": "^0.2.5"
+    }
+}

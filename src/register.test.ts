@@ -1,0 +1,408 @@
+import { describe, expect, test } from "vitest";
+import { BaseStyles, CompoundStyles, Styles } from "./register";
+
+export const literals = [
+    /* matches with variants */
+    "hover:md:sm_b0is",
+    " hover:md:sm_b0is",
+    "md:sm_b0is",
+    "md:sm_b0is ",
+    /* matches with no variants */
+    "hover:md:b0is",
+    " hover:md:b0is",
+    "md:b0is",
+    "md:b0is ",
+    /* matches but no modifiers */
+    "b0is",
+    " b0is",
+    `
+    b0is `,
+    "sm_b0is",
+    " sm_b0is",
+    `
+    sm_b0is `,
+    /* rejects */
+    " :hover:md:b0is",
+    "hover:md:ab0is",
+    ":b0is",
+    "hover:md::b0is",
+    "hover:mdb0is",
+    "hover:md:b0isa",
+    "b0i",
+    "md:b0is b0i",
+    "b0is b0i",
+    "b0isa",
+    "ab0is",
+    " :hover:md:sm_b0is",
+    "hover:md:sm_ab0is",
+    ":sm_b0is",
+    "hover:md::sm_b0is",
+    "hover:mdsm_b0is",
+    "hover:md:sm_b0isa",
+    "sm_b0i",
+    "md:sm_b0is b0i",
+    "sm_b0is b0i",
+    "sm_b0isa",
+    "sm_ab0is",
+];
+
+export const baseStyles1 = new BaseStyles("b0is");
+export const baseStyles2 = new BaseStyles("b0is", { variants: ["sm", "md"] });
+
+describe("BaseStyles", () => {
+    describe("instantiation", () => {
+        test("Simple", () => {
+            expect(baseStyles1.description).toBe("b0is");
+        });
+        test("variants", () => {
+            expect(baseStyles2.variants).toStrictEqual(["sm", "md"]);
+        });
+    });
+    describe("literal matching", () => {
+        const matchResultsDescription = literals.map(l =>
+            baseStyles1.matchDescription(l)
+        );
+        const matchResultsDescriptionVariants = literals.map(l =>
+            baseStyles2.matchDescription(l)
+        );
+        describe("descriptionRegex", () => {
+            test("no variants", () => {
+                expect(baseStyles1.descriptionRegex).toEqual(
+                    /(?<=^([^\t\n\r\s:]+:)*)b0is$/g
+                );
+            });
+            test("variants", () => {
+                expect(baseStyles2.descriptionRegex).toEqual(
+                    /(?<=^([^\t\n\r\s:]+:)*(sm|md)_)b0is$/g
+                );
+            });
+        });
+        describe("modifiersRegex", () => {
+            test("no variants", () => {
+                expect(baseStyles1.modifiersRegex).toEqual(
+                    /^([^\t\n\r\s:]+:)+(?=b0is$)/g
+                );
+            });
+            test("variants", () => {
+                expect(baseStyles2.modifiersRegex).toEqual(
+                    /^([^\t\n\r\s:]+:)+(?=(sm|md)_b0is$)/g
+                );
+            });
+        });
+        describe("variantsRegex", () => {
+            test("no variants", () => {
+                expect(baseStyles1.variantsRegex).toEqual(/^$/g);
+            });
+            test("variants", () => {
+                expect(baseStyles2.variantsRegex).toEqual(
+                    /(?<=^([^\t\n\r\s:]+:)*)(sm|md)(?=_b0is$)/g
+                );
+            });
+        });
+        describe("matchDescription", () => {
+            test("no variants", () => {
+                expect(matchResultsDescription).toEqual([
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    "b0is",
+                    "b0is",
+                    "b0is",
+                    "b0is",
+                    "b0is",
+                    "b0is",
+                    "b0is",
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                ]);
+            });
+            test("variants", () => {
+                expect(matchResultsDescriptionVariants).toEqual([
+                    "b0is",
+                    "b0is",
+                    "b0is",
+                    "b0is",
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    "b0is",
+                    "b0is",
+                    "b0is",
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                ]);
+            });
+        });
+        test("matchModifier", () => {
+            const matchResultsDescription = literals.map(l =>
+                baseStyles2.matchModifiers(l)
+            );
+            expect(matchResultsDescription).toEqual([
+                "hover:md:",
+                "hover:md:",
+                "md:",
+                "md:",
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+            ]);
+        });
+        test("matchVariants", () => {
+            const matchResultsVariant = literals.map(l =>
+                baseStyles2.matchVariant(l)
+            );
+            expect(matchResultsVariant).toEqual([
+                "sm",
+                "sm",
+                "sm",
+                "sm",
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                "sm",
+                "sm",
+                "sm",
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+            ]);
+        });
+    });
+    test("getIdentifier, getLiteral", () => {
+        const identifiers = literals.map(
+            l => baseStyles1.matchDescription(l) && baseStyles1.getIdentifier(l)
+        );
+        const identifiersDecoded = identifiers.map(i =>
+            baseStyles1.getLiteral(i)
+        );
+
+        return expect(identifiersDecoded).toEqual([
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            "hover:md:b0is",
+            "hover:md:b0is",
+            "md:b0is",
+            "md:b0is",
+            "b0is",
+            "b0is",
+            "b0is",
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+        ]);
+    });
+});
+
+const styles1 = new Styles("b0is", {
+    variants: ["sm", "md"],
+    dependencies: {
+        color: ["blue", "gray"],
+        heights: ["h1", "h2"],
+        widths: ["w1", "w2"],
+    },
+})
+    .staticStyles(d =>
+        d("color", {
+            blue: "text-blue-500",
+            gray: d("heights", "text-gray-500", { h1: "text-gray-700" }),
+        })
+    )
+    .staticStyles(d =>
+        d("widths", {
+            w1: "border-blue-500",
+            w2: "border-gray-500",
+        })
+    )
+    .staticStyles(d => d("heights", "h-100", { h1: "h-200" }))
+    .staticStyles(() => "display-none antialiased")
+    .staticStyles("border-0")
+    .dynamicStyles("space-x-1 space-y-2")
+    .dynamicStyles(() => "p-4")
+    .dynamicStyles(v => v("ring-2", { md: "ring-4" }))
+    .dynamicStyles((_, d) =>
+        d("heights", "translate-x-0", { h1: "translate-x-2" })
+    )
+    .dynamicStyles((v, d) =>
+        d("heights", `scale-${v("50", { sm: "75" })}`, {
+            h1: `scale-${v({ sm: "90", md: "95" })}`,
+        })
+    );
+
+const compoundStyle1 = new CompoundStyles("b0s", {
+    variants: ["sm", "md"],
+})
+    .add(styles1)
+    .addInline("b0as");
+
+describe("Styles", () => {
+    test("compile", () => {
+        expect(styles1.compile(baseStyles1.getIdentifier("md:sm_b0is")))
+            .toMatchInlineSnapshot(`
+          "export default ({color, heights, widths}) => \`\${({
+              blue: \\"text-blue-500\\",
+
+              gray: {
+                  h1: \\"text-gray-700\\"
+              }[heights] ?? \\"text-gray-500\\"
+          })[color] ?? \\"\\"} \${({
+              w1: \\"border-blue-500\\",
+              w2: \\"border-gray-500\\"
+          })[widths] ?? \\"\\"} \${({
+              h1: \\"h-200\\"
+          })[heights] ?? \\"h-100\\"} display-none antialiased border-0 md:space-x-1 md:space-y-2 md:p-4 md:ring-2 \${({
+              h1: \\"md:translate-x-2\\"
+          })[heights] ?? \\"md:translate-x-0\\"} \${({
+              h1: \\"md:scale-90\\"
+          })[heights] ?? \\"md:scale-75\\"}\`"
+        `);
+    });
+});
+
+describe("CompoundStyles", () => {
+    test("compile", () => {
+        expect(
+            compoundStyle1.compile(
+                baseStyles1.getIdentifier("md:sm_b0s"),
+                () => "./some/file/path.js"
+            )
+        ).toMatchInlineSnapshot(`
+          "import ${baseStyles1.getIdentifier(
+              "md:sm_b0is"
+          )} from \\"./some/file/path.js\\";
+          import ${baseStyles1.getIdentifier(
+              "md:sm_b0as"
+          )} from \\"./some/file/path.js\\";
+
+          export default {
+              b0is: ${baseStyles1.getIdentifier("md:sm_b0is")},
+              b0as: ${baseStyles1.getIdentifier("md:sm_b0as")}
+          };"
+        `);
+    });
+});
+
+// Which styles should be prepended?
