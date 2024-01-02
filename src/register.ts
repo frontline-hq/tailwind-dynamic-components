@@ -36,7 +36,7 @@ function prependWithModifiers(s: string, modifiers?: string) {
               .trimStart();
 }
 
-const variantDescriptionDelimiter = "_";
+export const variantDescriptionDelimiter = "_";
 const whitespaceCharsRegex = "\\t\\n\\r\\s";
 const twModifierRegex = `[^${whitespaceCharsRegex}:]+:`;
 const getVariantRegex = (variants: readonly string[], delimiter = true) => {
@@ -129,10 +129,7 @@ export class BaseStyles<
 }
 
 export class Styles<
-    const Description extends string | number | symbol =
-        | string
-        | number
-        | symbol,
+    const Description extends string | number | symbol = string,
     const Variants extends readonly string[] = readonly string[],
     const Dependencies extends Record<string, readonly string[]> = Record<
         string,
@@ -144,6 +141,19 @@ export class Styles<
         Array<Parameters<typeof this.staticStyles>[0]>,
         Array<Parameters<typeof this.dynamicStyles>[0]>,
     ];
+    propType = [
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        _ => {
+            throw new Error(
+                "This function is for type safety purposes ONLY and shall therefore not be called."
+            );
+        },
+    ] as Array<
+        | ((d?: {
+              [dependency in keyof Dependencies]: Dependencies[dependency][number];
+          }) => string)
+        | string
+    >;
 
     constructor(
         description: Description,
@@ -181,12 +191,11 @@ export class Styles<
         variant =>
         (...styles) => {
             if (typeof styles[0] === "string") {
-                if (styles[1]?.[variant]) {
-                    return styles[1][variant];
-                }
-                return styles[0];
+                const s = styles[1]?.[variant];
+                return s ?? styles[0];
             }
-            return styles[0][variant];
+            const s = styles[0][variant];
+            return s;
         };
 
     d: D<Dependencies> =
@@ -245,7 +254,7 @@ export class Styles<
         return (
             `export default ({${Object.keys(this.dependencies).join(
                 ", "
-            )}}) => \`` +
+            )}} = {}) => \`` +
             [...staticS, ...dynamicS].join(" ") +
             "`"
         );
@@ -268,10 +277,7 @@ type AddedStyles<
 };
 
 export class CompoundStyles<
-    const CompoundDescription extends string | number | symbol =
-        | string
-        | number
-        | symbol,
+    const CompoundDescription extends string = string,
     const Registrations extends Record<
         string,
         {
@@ -281,6 +287,16 @@ export class CompoundStyles<
     const Variants extends readonly string[] = readonly string[],
 > extends BaseStyles<CompoundDescription, Variants> {
     styles: AddedStyles<Registrations, Variants>;
+    propType = [{}] as Array<
+        | {
+              [K in keyof Registrations]: Styles<
+                  (typeof this.styles)[K]["description"],
+                  Variants,
+                  (typeof this.styles)[K]["dependencies"]
+              >["propType"];
+          }
+        | string
+    >;
     constructor(
         description: CompoundDescription,
         {
@@ -317,6 +333,8 @@ export class CompoundStyles<
             dependencies?: Dependencies;
         } = {}
     ) => {
+        if (description === (this.description as unknown as Description))
+            throw new Error("Description has to be unique.");
         return new CompoundStyles<
             CompoundDescription,
             Registrations & {
@@ -356,7 +374,7 @@ export class CompoundStyles<
         return print(
             b.program([
                 ...Object.entries(this.styles).map(
-                    ([k, v]: [
+                    ([, v]: [
                         keyof AddedStyles<Registrations, Variants>,
                         AddedStyles<
                             Registrations,
@@ -428,39 +446,17 @@ export type PropType<S extends Styles | CompoundStyles> = S extends Styles
           >;
       };
 
-const b0is = new Styles("b0is", {
-    variants: ["sm", "md"],
-    dependencies: { color: ["blue", "black"], shadow: ["gray", "green"] },
-})
-    .staticStyles(d =>
-        d("shadow", { gray: d("color", "", { black: "" }), green: "" })
-    )
-    .dynamicStyles("some-dynamic");
-const styles = b0is.styles[0][1];
+export function resolveProp<Dependencies>(
+    prop: Array<((d: Dependencies) => string) | string>,
+    dependencies: Dependencies
+) {
+    return prop
+        .map(p => {
+            if (typeof p === "string")
+                throw new Error(`Couldn't resolve Style "${p}"`);
 
-const b0s = new CompoundStyles("b0s", {
-    variants: ["sm", "md"],
-})
-    .addInline("c0is", {
-        dependencies: {
-            color: ["blue", "black"],
-            shadow: ["gray", "green"],
-        },
-    })
-    .add(b0is);
-
-const d: PropType<typeof b0is> = ({ shadow, color }) => "";
-
-const f: PropType<typeof b0s> = { b0is: "" };
-
-type H = typeof b0s;
-type Z = typeof b0is;
-
-type G = H["styles"];
-
-//.dynamicStyles(v => [v("default-class", { sm: "sm-style" })]);
-// .dynamicStyles(v => [v({ sm: "sm-style", md: "md-style" })])
-// .dynamicStyles(() => "")
-// .dynamicStyles(() => [""]);
-// .staticStyles(() => ["w-20 h-10"])
-// .staticStyles("")
+            console.log(p(dependencies));
+            return p(dependencies);
+        })
+        .join(" ");
+}

@@ -186,3 +186,4 @@ The implementation consists of three parts:
 
 -   Add exceptions to the transform process (special file ending for registrations and the library config file.)
 -   Add compiled styles to files
+-   Add safeguards for duplicate descriptions in processing of config.

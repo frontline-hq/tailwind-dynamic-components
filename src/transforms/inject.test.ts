@@ -1,11 +1,9 @@
-import { describe, test, vi, expect } from "vitest";
+import { describe, test, expect } from "vitest";
 import { newEmittedFiles, analyzeJsSvelte } from "./inject";
 import { parse as jsParse } from "recast";
-import { EmitFile, EmittedChunk, PluginContext } from "rollup";
-import { shortLibraryName } from "../library.config";
 import { walk } from "estree-walker";
 import { parse as svelteParse, walk as svelteWalk } from "svelte/compiler";
-import { Styles } from "../register";
+import { CompoundStyles, Styles } from "../register";
 
 export const styles1 = new Styles("b0is");
 export const styles2 = new Styles("b0is", { variants: ["sm", "md"] });
@@ -15,29 +13,15 @@ export const styles3 = new Styles("b0is", {
         heights: ["one", "two"],
     },
 });
-
-const getFileReference = (identifier: string) =>
-    `ref-${shortLibraryName}-${identifier}`;
-const getEmittedFiles = (literals: string[]) =>
-    getIdentifiers(literals).map(
-        i =>
-            [
-                i,
-                {
-                    styles: styles3,
-                    fileReference: getFileReference(i),
-                },
-            ] as const
-    );
-
-const getIdentifiers = (literals: string[]) =>
-    literals.map(l => styles3.getIdentifier(l));
+const compoundStyle = new CompoundStyles("b0s").addInline("b0as");
 
 export const jsTestCode01 = `
     // Match
     const a = "b0is";
     const b = \`md:b0is\`;
     const c = 'hover:md:b0is';
+    const f = "b0as";
+    const g = "b0s";
     // identifier of md:b0is is reserved
     const UvbZZuJVSa = "something";
     // Do not match
@@ -53,147 +37,142 @@ export const svelteTestCode01 = `
 <Component some-prop={'hover:md:b0is'} />
 <Component some-prop={\`hover:md:b0is\`} />
 <Component some-prop=hover:md:b0is />
+<Component some-prop=hover:md:b0s />
 
 <!-- Do not match -->
 <Component some-prop="ab0is" />
 `;
-
-const jsEmitted = newEmittedFiles();
-const svelteEmitted = newEmittedFiles();
-const emitFileSpy = vi.fn(({ id }: EmittedChunk) => "ref-" + id) as EmitFile;
-
-const literals = ["b0is", "md:b0is", "hover:md:b0is"];
 const jsAst = jsParse(jsTestCode01);
-const jsResult = analyzeJsSvelte(
-    jsAst,
-    [styles3],
-    jsEmitted,
-    { emitFile: emitFileSpy } as PluginContext,
-    walk
-);
 const svelteAst = svelteParse(svelteTestCode01);
-const svelteResult = analyzeJsSvelte(
-    svelteAst,
-    [styles3],
-    svelteEmitted,
-    { emitFile: emitFileSpy } as PluginContext,
-    svelteWalk
-);
-export const js01ResultReference = {
-    emittedFiles: new Map(getEmittedFiles(literals)),
-    importsToAdd: new Map([
-        ["DFutYsdTuNsmYdtaFQU", "ref-tdc-DFutYsdTuNsmYdtaFQU"],
-        ["FroHnY", "ref-tdc-FroHnY"],
-        ["UvbZZuJVSa_", "ref-tdc-UvbZZuJVSa"],
-    ]),
-    elementsToReplace: [
-        {
-            declarableIdentifier: "FroHnY",
-            end: undefined,
-            raw: '"b0is"',
-            start: undefined,
-            type: "literal",
-            value: "b0is",
-        },
-        {
-            declarableIdentifier: "UvbZZuJVSa_",
-            end: undefined,
-            raw: "`md:b0is`",
-            start: undefined,
-            type: "template",
-            value: "md:b0is",
-        },
-        {
-            declarableIdentifier: "DFutYsdTuNsmYdtaFQU",
-            end: undefined,
-            raw: "'hover:md:b0is'",
-            start: undefined,
-            type: "literal",
-            value: "hover:md:b0is",
-        },
-    ],
-};
-export const svelte01ResultReference = {
-    emittedFiles: new Map(getEmittedFiles(literals)),
-    importsToAdd: new Map([
-        ["FroHnY", "ref-tdc-FroHnY"],
-        ["UvbZZuJVSa_", "ref-tdc-UvbZZuJVSa"],
-        ["DFutYsdTuNsmYdtaFQU", "ref-tdc-DFutYsdTuNsmYdtaFQU"],
-    ]),
-    elementsToReplace: [
-        {
-            declarableIdentifier: "FroHnY",
-            end: 286,
-            name: "some-prop",
-            raw: "b0is",
-            start: 270,
-            type: "attribute",
-            value: "b0is",
-        },
-        {
-            declarableIdentifier: "UvbZZuJVSa_",
-            end: 320,
-            raw: '"md:b0is"',
-            start: 311,
-            type: "literal",
-            value: "md:b0is",
-        },
-        {
-            declarableIdentifier: "DFutYsdTuNsmYdtaFQU",
-            end: 362,
-            raw: "'hover:md:b0is'",
-            start: 347,
-            type: "literal",
-            value: "hover:md:b0is",
-        },
-        {
-            declarableIdentifier: "DFutYsdTuNsmYdtaFQU",
-            end: 404,
-            raw: "`hover:md:b0is`",
-            start: 389,
-            type: "template",
-            value: "hover:md:b0is",
-        },
-        {
-            declarableIdentifier: "DFutYsdTuNsmYdtaFQU",
-            end: 443,
-            name: "some-prop",
-            raw: "hover:md:b0is",
-            start: 420,
-            type: "attribute",
-            value: "hover:md:b0is",
-        },
-        {
-            declarableIdentifier: "FroHnY",
-            end: 43,
-            raw: '"b0is"',
-            start: 37,
-            type: "literal",
-            value: "b0is",
-        },
-        {
-            declarableIdentifier: "UvbZZuJVSa_",
-            end: 68,
-            raw: "`md:b0is`",
-            start: 59,
-            type: "template",
-            value: "md:b0is",
-        },
-        {
-            declarableIdentifier: "DFutYsdTuNsmYdtaFQU",
-            end: 99,
-            raw: "'hover:md:b0is'",
-            start: 84,
-            type: "literal",
-            value: "hover:md:b0is",
-        },
-    ],
-};
 
 describe("analyze", () => {
     describe("js", () => {
-        test("Template and regular literals", () => {
-            expect(jsResult).toEqual(js01ResultReference);
+        test("elements to replace", () => {
+            expect(
+                analyzeJsSvelte(
+                    jsAst,
+                    [styles3, compoundStyle],
+                    newEmittedFiles(),
+                    walk
+                ).elementsToReplace
+            ).toMatchInlineSnapshot(`
+              [
+                {
+                  "declarableIdentifier": "FroHnY",
+                  "end": undefined,
+                  "start": undefined,
+                  "type": "literal",
+                  "value": "b0is",
+                },
+                {
+                  "declarableIdentifier": "UvbZZuJVSa_",
+                  "end": undefined,
+                  "start": undefined,
+                  "type": "template",
+                  "value": "md:b0is",
+                },
+                {
+                  "declarableIdentifier": "DFutYsdTuNsmYdtaFQU",
+                  "end": undefined,
+                  "start": undefined,
+                  "type": "literal",
+                  "value": "hover:md:b0is",
+                },
+                {
+                  "declarableIdentifier": "FroGui",
+                  "end": undefined,
+                  "start": undefined,
+                  "type": "literal",
+                  "value": "b0as",
+                },
+                {
+                  "declarableIdentifier": "BFkFG",
+                  "end": undefined,
+                  "start": undefined,
+                  "type": "literal",
+                  "value": "b0s",
+                },
+              ]
+            `);
+        });
+        describe("imports to add", () => {
+            test("registrations with missing sub style from compoundStyle", () => {
+                expect(
+                    analyzeJsSvelte(
+                        jsAst,
+                        [styles3, compoundStyle],
+                        newEmittedFiles(),
+                        walk
+                    ).importsToAdd
+                ).toMatchInlineSnapshot(`
+                  Map {
+                    "FroHnY" => "virtual:tdc-FroHnY",
+                    "UvbZZuJVSa_" => "virtual:tdc-UvbZZuJVSa",
+                    "DFutYsdTuNsmYdtaFQU" => "virtual:tdc-DFutYsdTuNsmYdtaFQU",
+                    "FroGui" => "virtual:tdc-FroGui",
+                    "BFkFG" => "virtual:tdc-BFkFG",
+                  }
+                `);
+            });
+            test("registrations with sub style from compoundStyle", () => {
+                expect(
+                    analyzeJsSvelte(
+                        jsAst,
+                        [styles3, compoundStyle],
+                        newEmittedFiles(),
+                        walk
+                    ).importsToAdd
+                ).toMatchInlineSnapshot(`
+                  Map {
+                    "FroHnY" => "virtual:tdc-FroHnY",
+                    "UvbZZuJVSa_" => "virtual:tdc-UvbZZuJVSa",
+                    "DFutYsdTuNsmYdtaFQU" => "virtual:tdc-DFutYsdTuNsmYdtaFQU",
+                    "FroGui" => "virtual:tdc-FroGui",
+                    "BFkFG" => "virtual:tdc-BFkFG",
+                  }
+                `);
+            });
+        });
+        test("emitted files", () => {
+            expect(
+                analyzeJsSvelte(
+                    jsAst,
+                    [styles3, compoundStyle],
+                    newEmittedFiles(),
+                    walk
+                ).emittedFiles
+            ).toMatchInlineSnapshot(`
+              Map {
+                "FroHnY" => {
+                  "fileReference": "virtual:tdc-FroHnY",
+                  "styles": "export default ({color, heights} = {}) => \`\`",
+                },
+                "UvbZZuJVSa" => {
+                  "fileReference": "virtual:tdc-UvbZZuJVSa",
+                  "styles": "export default ({color, heights} = {}) => \`\`",
+                },
+                "DFutYsdTuNsmYdtaFQU" => {
+                  "fileReference": "virtual:tdc-DFutYsdTuNsmYdtaFQU",
+                  "styles": "export default ({color, heights} = {}) => \`\`",
+                },
+                "FroGui" => {
+                  "fileReference": "virtual:tdc-FroGui",
+                  "styles": "export default ({} = {}) => \`\`",
+                },
+                "BFkFG" => {
+                  "fileReference": "virtual:tdc-BFkFG",
+                  "styles": "import USKtRmcqhVTaNLtGHTvY from \\"virtual:tdc-USKtRmcqhVTaNLtGHTvY\\";
+
+              export default {
+                  b0as: USKtRmcqhVTaNLtGHTvY
+              };",
+                },
+                "USKtRmcqhVTaNLtGHTvY" => {
+                  "fileReference": "virtual:tdc-USKtRmcqhVTaNLtGHTvY",
+                  "styles": "export default ({} = {}) => \`\`",
+                },
+              }
+            `);
         });
         // Add imports first, then inject literals with declarable identifiers
         /*        test("replaceLiterals", () => {
@@ -207,8 +186,191 @@ describe("analyze", () => {
         }); */
     });
     describe("svelte", () => {
-        test("Template and regular literals", () => {
-            expect(svelteResult).toEqual(svelte01ResultReference);
+        test("elements to replace", () => {
+            expect(
+                analyzeJsSvelte(
+                    svelteAst,
+                    [styles3, compoundStyle],
+                    newEmittedFiles(),
+                    svelteWalk
+                ).elementsToReplace
+            ).toMatchInlineSnapshot(`
+              [
+                {
+                  "declarableIdentifier": "FroHnY",
+                  "end": 329,
+                  "name": "some-prop",
+                  "start": 313,
+                  "type": "attribute",
+                  "value": "b0is",
+                },
+                {
+                  "declarableIdentifier": "UvbZZuJVSa_",
+                  "end": 363,
+                  "start": 354,
+                  "type": "literal",
+                  "value": "md:b0is",
+                },
+                {
+                  "declarableIdentifier": "DFutYsdTuNsmYdtaFQU",
+                  "end": 405,
+                  "start": 390,
+                  "type": "literal",
+                  "value": "hover:md:b0is",
+                },
+                {
+                  "declarableIdentifier": "DFutYsdTuNsmYdtaFQU",
+                  "end": 447,
+                  "start": 432,
+                  "type": "template",
+                  "value": "hover:md:b0is",
+                },
+                {
+                  "declarableIdentifier": "DFutYsdTuNsmYdtaFQU",
+                  "end": 486,
+                  "name": "some-prop",
+                  "start": 463,
+                  "type": "attribute",
+                  "value": "hover:md:b0is",
+                },
+                {
+                  "declarableIdentifier": "fNzbMeyhNLtAQkweV",
+                  "end": 523,
+                  "name": "some-prop",
+                  "start": 501,
+                  "type": "attribute",
+                  "value": "hover:md:b0s",
+                },
+                {
+                  "declarableIdentifier": "FroHnY",
+                  "end": 43,
+                  "start": 37,
+                  "type": "literal",
+                  "value": "b0is",
+                },
+                {
+                  "declarableIdentifier": "UvbZZuJVSa_",
+                  "end": 68,
+                  "start": 59,
+                  "type": "template",
+                  "value": "md:b0is",
+                },
+                {
+                  "declarableIdentifier": "DFutYsdTuNsmYdtaFQU",
+                  "end": 99,
+                  "start": 84,
+                  "type": "literal",
+                  "value": "hover:md:b0is",
+                },
+                {
+                  "declarableIdentifier": "FroGui",
+                  "end": 121,
+                  "start": 115,
+                  "type": "literal",
+                  "value": "b0as",
+                },
+                {
+                  "declarableIdentifier": "BFkFG",
+                  "end": 142,
+                  "start": 137,
+                  "type": "literal",
+                  "value": "b0s",
+                },
+              ]
+            `);
+        });
+        describe("imports to add", () => {
+            test("registrations with missing sub style from compoundStyle", () => {
+                expect(
+                    analyzeJsSvelte(
+                        svelteAst,
+                        [styles3, compoundStyle],
+                        newEmittedFiles(),
+                        svelteWalk
+                    ).importsToAdd
+                ).toMatchInlineSnapshot(`
+                  Map {
+                    "FroHnY" => "virtual:tdc-FroHnY",
+                    "UvbZZuJVSa_" => "virtual:tdc-UvbZZuJVSa",
+                    "DFutYsdTuNsmYdtaFQU" => "virtual:tdc-DFutYsdTuNsmYdtaFQU",
+                    "fNzbMeyhNLtAQkweV" => "virtual:tdc-fNzbMeyhNLtAQkweV",
+                    "FroGui" => "virtual:tdc-FroGui",
+                    "BFkFG" => "virtual:tdc-BFkFG",
+                  }
+                `);
+            });
+            test("registrations with sub style from compoundStyle", () => {
+                expect(
+                    analyzeJsSvelte(
+                        svelteAst,
+                        [styles3, compoundStyle],
+                        newEmittedFiles(),
+                        svelteWalk
+                    ).importsToAdd
+                ).toMatchInlineSnapshot(`
+                  Map {
+                    "FroHnY" => "virtual:tdc-FroHnY",
+                    "UvbZZuJVSa_" => "virtual:tdc-UvbZZuJVSa",
+                    "DFutYsdTuNsmYdtaFQU" => "virtual:tdc-DFutYsdTuNsmYdtaFQU",
+                    "fNzbMeyhNLtAQkweV" => "virtual:tdc-fNzbMeyhNLtAQkweV",
+                    "FroGui" => "virtual:tdc-FroGui",
+                    "BFkFG" => "virtual:tdc-BFkFG",
+                  }
+                `);
+            });
+        });
+        test("emitted files", () => {
+            expect(
+                analyzeJsSvelte(
+                    svelteAst,
+                    [styles3, compoundStyle],
+                    newEmittedFiles(),
+                    svelteWalk
+                ).emittedFiles
+            ).toMatchInlineSnapshot(`
+              Map {
+                "FroHnY" => {
+                  "fileReference": "virtual:tdc-FroHnY",
+                  "styles": "export default ({color, heights} = {}) => \`\`",
+                },
+                "UvbZZuJVSa" => {
+                  "fileReference": "virtual:tdc-UvbZZuJVSa",
+                  "styles": "export default ({color, heights} = {}) => \`\`",
+                },
+                "DFutYsdTuNsmYdtaFQU" => {
+                  "fileReference": "virtual:tdc-DFutYsdTuNsmYdtaFQU",
+                  "styles": "export default ({color, heights} = {}) => \`\`",
+                },
+                "fNzbMeyhNLtAQkweV" => {
+                  "fileReference": "virtual:tdc-fNzbMeyhNLtAQkweV",
+                  "styles": "import JKrxYXcMMiKWKoSyxwXensXhaNvzKfACk from \\"virtual:tdc-JKrxYXcMMiKWKoSyxwXensXhaNvzKfACk\\";
+
+              export default {
+                  b0as: JKrxYXcMMiKWKoSyxwXensXhaNvzKfACk
+              };",
+                },
+                "JKrxYXcMMiKWKoSyxwXensXhaNvzKfACk" => {
+                  "fileReference": "virtual:tdc-JKrxYXcMMiKWKoSyxwXensXhaNvzKfACk",
+                  "styles": "export default ({} = {}) => \`\`",
+                },
+                "FroGui" => {
+                  "fileReference": "virtual:tdc-FroGui",
+                  "styles": "export default ({} = {}) => \`\`",
+                },
+                "BFkFG" => {
+                  "fileReference": "virtual:tdc-BFkFG",
+                  "styles": "import USKtRmcqhVTaNLtGHTvY from \\"virtual:tdc-USKtRmcqhVTaNLtGHTvY\\";
+
+              export default {
+                  b0as: USKtRmcqhVTaNLtGHTvY
+              };",
+                },
+                "USKtRmcqhVTaNLtGHTvY" => {
+                  "fileReference": "virtual:tdc-USKtRmcqhVTaNLtGHTvY",
+                  "styles": "export default ({} = {}) => \`\`",
+                },
+              }
+            `);
         });
     });
 });

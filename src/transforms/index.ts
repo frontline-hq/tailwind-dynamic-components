@@ -1,5 +1,4 @@
-import { PluginContext } from "rollup";
-import type { TransformConfig } from "../config.js";
+import type { TransformConfig } from "../config/config.js";
 import type { FileInformation } from "../fileInformation.js";
 import { libraryName } from "../library.config.js";
 import { transformJs } from "./_.js.js";
@@ -12,7 +11,6 @@ export const transformCode = (
     config: TransformConfig,
     code: string,
     { type }: FileInformation,
-    rollupPluginContext: PluginContext,
     emitted: ReturnType<typeof newEmittedFiles>
 ) => {
     if (!pluginOrderVerified && type.endsWith(".svelte"))
@@ -20,10 +18,14 @@ export const transformCode = (
 
     switch (type) {
         case "*.js":
-            return transformJs(config, code, emitted, rollupPluginContext);
+            return transformJs(config, code, emitted);
         case "*.svelte":
-            return transformSvelte(config, code, emitted, rollupPluginContext);
+            return transformSvelte(config, code, emitted);
     }
+    return;
+
+    // 1. Process emitted (first Styles and children of compoundStyles, then CompoundStyles). For CompoundStyles process the substyles
+    // 2.
 };
 
 // ------------------------------------------------------------------------------------------------

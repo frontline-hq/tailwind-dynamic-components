@@ -1,7 +1,14 @@
-import path, { normalize } from "node:path";
-import type { TransformConfig } from "./config";
+import path from "path";
+import { configFileName, type TransformConfig } from "./config/config";
 
-export type FileType = "*.js" | "*.svelte";
+import { shortLibraryName } from "./library.config";
+
+export type FileType =
+    | "*.js"
+    | "*.svelte"
+    | "virtual"
+    | "registration"
+    | "configuration";
 
 export type FileInformation = {
     type: FileType;
@@ -13,7 +20,8 @@ export const getFileInformation = (
     config: TransformConfig,
     rawId: string
 ): FileInformation | undefined => {
-    const id = normalize(rawId);
+    if (rawId.startsWith("virtual:")) return { type: "virtual" };
+    const id = path.normalize(rawId);
 
     if (
         !id.startsWith(config.cwdFolderPath) ||
@@ -22,9 +30,15 @@ export const getFileInformation = (
     )
         return undefined;
 
-    const { ext } = path.parse(id);
+    const { ext, name } = path.parse(id);
 
     if (scriptExtensions.includes(ext)) {
+        if (name.endsWith(`${shortLibraryName}`))
+            return { type: "registration" };
+        if (configFileName.includes(name))
+            return {
+                type: "configuration",
+            };
         return {
             type: "*.js",
         };

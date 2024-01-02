@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, expectTypeOf, test } from "vitest";
 import { BaseStyles, CompoundStyles, Styles } from "./register";
 
 export const literals = [
@@ -317,7 +317,7 @@ describe("BaseStyles", () => {
     });
 });
 
-const styles1 = new Styles("b0is", {
+export const styles1 = new Styles("b0is", {
     variants: ["sm", "md"],
     dependencies: {
         color: ["blue", "gray"],
@@ -352,17 +352,23 @@ const styles1 = new Styles("b0is", {
         })
     );
 
-const compoundStyle1 = new CompoundStyles("b0s", {
+export const compoundStyle1 = new CompoundStyles("b0s", {
     variants: ["sm", "md"],
 })
     .add(styles1)
-    .addInline("b0as");
+    .addInline("b0as")
+    .addInline("c0is", {
+        dependencies: {
+            color: ["blue", "black"],
+            shadow: ["gray", "green"],
+        },
+    });
 
 describe("Styles", () => {
     test("compile", () => {
         expect(styles1.compile(baseStyles1.getIdentifier("md:sm_b0is")))
             .toMatchInlineSnapshot(`
-          "export default ({color, heights, widths}) => \`\${({
+          "export default ({color, heights, widths} = {}) => \`\${({
               blue: \\"text-blue-500\\",
 
               gray: {
@@ -380,9 +386,65 @@ describe("Styles", () => {
           })[heights] ?? \\"md:scale-75\\"}\`"
         `);
     });
+    test("propType", () => {
+        expectTypeOf(styles1["propType"]).toEqualTypeOf<
+            | string
+            | ((d: {
+                  readonly color: keyof (readonly ["blue", "gray"]);
+                  readonly heights: keyof (readonly ["h1", "h2"]);
+                  readonly widths: keyof (readonly ["w1", "w2"]);
+              }) => string)
+        >();
+    });
 });
 
 describe("CompoundStyles", () => {
+    test("propType", () => {
+        expectTypeOf(compoundStyle1["propType"]).toEqualTypeOf<
+            | string
+            | {
+                  [x: string]: string | ((d: never) => string);
+                  b0is:
+                      | string
+                      | ((d: {
+                            readonly color: keyof (readonly ["blue", "gray"]);
+                            readonly heights: keyof (readonly ["h1", "h2"]);
+                            readonly widths: keyof (readonly ["w1", "w2"]);
+                        }) => string);
+                  b0as:
+                      | string
+                      | ((d: {
+                            [x: string]: keyof (readonly string[]);
+                        }) => string);
+                  c0is:
+                      | string
+                      | ((d: {
+                            readonly color: keyof (readonly ["blue", "black"]);
+                            readonly shadow: keyof (readonly ["gray", "green"]);
+                        }) => string);
+              }
+        >();
+    });
+    describe("unique description error", () => {
+        test("addInline", () => {
+            try {
+                expect(
+                    new CompoundStyles("some-description").addInline(
+                        "some-description"
+                    )
+                ).toThrowError("Description has to be unique.");
+            } catch (error) {}
+        });
+        test("add", () => {
+            try {
+                expect(
+                    new CompoundStyles("some-description").add(
+                        new Styles("some-description")
+                    )
+                ).toThrowError("Description has to be unique.");
+            } catch (error) {}
+        });
+    });
     test("compile", () => {
         expect(
             compoundStyle1.compile(
@@ -390,16 +452,14 @@ describe("CompoundStyles", () => {
                 () => "./some/file/path.js"
             )
         ).toMatchInlineSnapshot(`
-          "import ${baseStyles1.getIdentifier(
-              "md:sm_b0is"
-          )} from \\"./some/file/path.js\\";
-          import ${baseStyles1.getIdentifier(
-              "md:sm_b0as"
-          )} from \\"./some/file/path.js\\";
+          "import BGBXXhXQzMBHMXv from \\"./some/file/path.js\\";
+          import BGBXXhXQzMBHLfF from \\"./some/file/path.js\\";
+          import BGBXXhXQzMECsCD from \\"./some/file/path.js\\";
 
           export default {
-              b0is: ${baseStyles1.getIdentifier("md:sm_b0is")},
-              b0as: ${baseStyles1.getIdentifier("md:sm_b0as")}
+              b0is: BGBXXhXQzMBHMXv,
+              b0as: BGBXXhXQzMBHLfF,
+              c0is: BGBXXhXQzMECsCD
           };"
         `);
     });

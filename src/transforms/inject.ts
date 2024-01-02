@@ -1,24 +1,28 @@
-import { types } from "recast";
-import { CompoundStyles, Styles } from "../register";
-import { walk as jsWalk } from "estree-walker";
-import { BaseNode, Node } from "estree";
-import type { PluginContext } from "rollup";
+import {
+    CompoundStyles,
+    Styles,
+    variantDescriptionDelimiter,
+} from "../register";
+import type { walk as jsWalk } from "estree-walker";
+import { Node } from "estree";
 import { shortLibraryName } from "../library.config";
 import { findDeclarableIdentifier } from "../ast/ast";
 import { Ast, Attribute, Text } from "svelte/types/compiler/interfaces";
 import { walk as svelteWalk } from "svelte/compiler";
-
-const n = types.namedTypes;
-const b = types.builders;
+import { flattenAndCheckRegistrations } from "../config/config";
+import { ASTNode, namedTypes as n } from "ast-types";
 
 export function newEmittedFiles() {
     return new Map<string, Emitted>();
 }
 
-type Emitted = { styles: Styles | CompoundStyles; fileReference: string };
+export type Emitted = {
+    styles: string;
+    fileReference: string;
+};
 export type EmittedFiles = ReturnType<typeof newEmittedFiles>;
 
-function templateLiteralValue(node: types.namedTypes.Node | Node | BaseNode) {
+function templateLiteralValue(node: ASTNode) {
     // We are looking for a template literal with 0 expressions and
     if (
         n.TemplateLiteral.check(node) &&
@@ -27,9 +31,8 @@ function templateLiteralValue(node: types.namedTypes.Node | Node | BaseNode) {
         n.TemplateElement.check(node.quasis[0])
     ) {
         return {
-            start: node.start as number,
-            end: node.end as number,
-            raw: `\`${node.quasis[0].value.raw}\``,
+            start: (node as AcornNode<n.TemplateLiteral>).start,
+            end: (node as AcornNode<n.TemplateLiteral>).end,
             value: node.quasis[0].value.raw,
             type: "template" as const,
         };
@@ -37,20 +40,19 @@ function templateLiteralValue(node: types.namedTypes.Node | Node | BaseNode) {
     return undefined;
 }
 
-function nodeIsAttribute(node: BaseNode): node is Attribute {
+function nodeIsAttribute(node: ASTNode): node is Attribute {
     return node.type === "Attribute";
 }
 
-function nodeIsText(node: BaseNode): node is Text {
+function nodeIsText(node: ASTNode): node is Text {
     return node.type === "Text";
 }
 
-function attributeTextValue(node: BaseNode) {
+function attributeTextValue(node: ASTNode) {
     if (nodeIsAttribute(node) && nodeIsText(node.value[0]))
         return {
             start: node.start,
             end: node.end,
-            raw: node.value[0].data,
             value: node.value[0].data,
             type: "attribute" as const,
             name: node.name,
@@ -58,11 +60,12 @@ function attributeTextValue(node: BaseNode) {
     return undefined;
 }
 
+type AcornNode<N extends ASTNode> = N & { start: number; end: number };
+
 type SearchResult = {
+    value: string;
     start: number;
     end: number;
-    raw: string;
-    value: string;
 } & (
     | {
           type: "template" | "literal";
@@ -73,17 +76,20 @@ type SearchResult = {
       }
 );
 
+function getFileName(identifier: string) {
+    return `virtual:${shortLibraryName}-${identifier}`;
+}
+
 function runOnSearchResult(
-    node: Node | types.namedTypes.Node | BaseNode,
+    node: ASTNode,
     runOn: (searchResult: SearchResult) => void
 ) {
     const element = n.Literal.check(node)
-        ? typeof node.value === "string" && node.raw != undefined
+        ? typeof node.value === "string"
             ? {
-                  start: node.start as number,
-                  end: node.end as number,
-                  raw: node.raw,
                   value: node.value,
+                  start: (node as AcornNode<n.Literal>).start,
+                  end: (node as AcornNode<n.Literal>).end,
                   type: "literal" as const,
               }
             : undefined
@@ -94,16 +100,11 @@ function runOnSearchResult(
 /* code: the code of the page to inject into */
 /* registrations: the user provided registrations */
 /* emittedIdentifiers: the identifiers already processed and placed in the emitted file */
-export function analyzeJsSvelte<
-    AstType extends types.namedTypes.Node | Node | Ast,
->(
+export function analyzeJsSvelte<AstType extends ASTNode | Ast>(
     ast: AstType,
     registrations: (Styles | CompoundStyles)[],
     emittedFiles: EmittedFiles,
-    rollupPluginContext: PluginContext,
-    walker: AstType extends types.namedTypes.Node | Node
-        ? typeof jsWalk
-        : typeof svelteWalk
+    walker: AstType extends ASTNode ? typeof jsWalk : typeof svelteWalk
 ) {
     // Imports to add
     const importsToAdd = new Map<string, string>();
@@ -111,14 +112,16 @@ export function analyzeJsSvelte<
         declarableIdentifier: string;
     } & SearchResult)[] = [];
 
+    const completeRegistrations = flattenAndCheckRegistrations(registrations);
+
     // Find and replace occurences of identifiers
     walker(ast as Node, {
-        enter(node: BaseNode) {
+        enter(node: ASTNode) {
             // 1. Check whether it is the right node type
             // 2. If yes, Check for a match
 
             runOnSearchResult(node, literal => {
-                const matchingRegistration = registrations.find(r => {
+                const matchingRegistration = completeRegistrations.find(r => {
                     return r.matchDescription(literal.value);
                 });
                 // 3. If matching
@@ -126,21 +129,49 @@ export function analyzeJsSvelte<
                     const identifier = matchingRegistration.getIdentifier(
                         literal.value
                     );
+                    const modifiers = matchingRegistration.matchModifiers(
+                        literal.value
+                    );
+                    const variant = matchingRegistration.matchVariant(
+                        literal.value
+                    );
                     const declarableIdentifier = findDeclarableIdentifier(
-                        ast as Node,
+                        ast,
                         identifier,
                         walker
                     );
                     const ref =
                         emittedFiles.get(identifier)?.fileReference ??
-                        rollupPluginContext.emitFile({
-                            type: "chunk",
-                            id: `${shortLibraryName}-${identifier}`,
-                        });
+                        `virtual:${shortLibraryName}-${identifier}`;
                     emittedFiles.set(identifier, {
-                        styles: matchingRegistration,
+                        styles: matchingRegistration.compile(
+                            identifier,
+                            getFileName
+                        ),
                         fileReference: ref,
                     });
+                    if (matchingRegistration instanceof CompoundStyles) {
+                        // Construct emittedFiles for each child of compoundStyles.
+                        Object.values(matchingRegistration.styles).forEach(
+                            s => {
+                                const subIdentifier = s.getIdentifier(
+                                    `${
+                                        modifiers ?? ""
+                                    }${variant}${variantDescriptionDelimiter}${
+                                        s.description
+                                    }`
+                                );
+                                const subRef =
+                                    emittedFiles.get(subIdentifier)
+                                        ?.fileReference ??
+                                    `virtual:${shortLibraryName}-${subIdentifier}`;
+                                emittedFiles.set(subIdentifier, {
+                                    styles: s.compile(subIdentifier),
+                                    fileReference: subRef,
+                                });
+                            }
+                        );
+                    }
                     // Replace with alternative import name
                     // Replace literals: ""
                     // Replace attribute: attribute= "value" or attribute= value
