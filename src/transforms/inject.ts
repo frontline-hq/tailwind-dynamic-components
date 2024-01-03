@@ -142,7 +142,7 @@ export function analyzeJsSvelte<AstType extends ASTNode | Ast>(
                     );
                     const ref =
                         emittedFiles.get(identifier)?.fileReference ??
-                        `virtual:${shortLibraryName}-${identifier}`;
+                        getFileName(identifier);
                     emittedFiles.set(identifier, {
                         styles: matchingRegistration.compile(
                             identifier,
@@ -164,7 +164,7 @@ export function analyzeJsSvelte<AstType extends ASTNode | Ast>(
                                 const subRef =
                                     emittedFiles.get(subIdentifier)
                                         ?.fileReference ??
-                                    `virtual:${shortLibraryName}-${subIdentifier}`;
+                                    getFileName(subIdentifier);
                                 emittedFiles.set(subIdentifier, {
                                     styles: s.compile(subIdentifier),
                                     fileReference: subRef,

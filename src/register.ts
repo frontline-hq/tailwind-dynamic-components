@@ -454,8 +454,6 @@ export function resolveProp<Dependencies>(
         .map(p => {
             if (typeof p === "string")
                 throw new Error(`Couldn't resolve Style "${p}"`);
-
-            console.log(p(dependencies));
             return p(dependencies);
         })
         .join(" ");

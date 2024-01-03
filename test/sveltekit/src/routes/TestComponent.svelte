@@ -1,11 +1,11 @@
 <script lang="ts">
-	import type TestComponent from './testComponent.tdc';
-	import { resolveProp } from '../../../../src';
+	import type { test01 } from '../../tailwind-dynamic-components.config';
+	import { resolveProp } from '../../../../dist';
 
-	export let styles: (typeof TestComponent)['propType'];
+	export let styles: (typeof test01)['propType'];
 
 	interface $$Props {
-		styles: (typeof TestComponent)['propType'];
+		styles: (typeof test01)['propType'];
 	}
 
 	const resolved = resolveProp(styles, { color: 'blue' });

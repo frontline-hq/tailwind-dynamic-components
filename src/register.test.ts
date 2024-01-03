@@ -388,12 +388,18 @@ describe("Styles", () => {
     });
     test("propType", () => {
         expectTypeOf(styles1["propType"]).toEqualTypeOf<
-            | string
-            | ((d: {
-                  readonly color: keyof (readonly ["blue", "gray"]);
-                  readonly heights: keyof (readonly ["h1", "h2"]);
-                  readonly widths: keyof (readonly ["w1", "w2"]);
-              }) => string)
+            (
+                | string
+                | ((
+                      d?:
+                          | {
+                                readonly color: "blue" | "gray";
+                                readonly heights: "h1" | "h2";
+                                readonly widths: "w1" | "w2";
+                            }
+                          | undefined
+                  ) => string)
+            )[]
         >();
     });
 });
@@ -401,28 +407,41 @@ describe("Styles", () => {
 describe("CompoundStyles", () => {
     test("propType", () => {
         expectTypeOf(compoundStyle1["propType"]).toEqualTypeOf<
-            | string
-            | {
-                  [x: string]: string | ((d: never) => string);
-                  b0is:
-                      | string
-                      | ((d: {
-                            readonly color: keyof (readonly ["blue", "gray"]);
-                            readonly heights: keyof (readonly ["h1", "h2"]);
-                            readonly widths: keyof (readonly ["w1", "w2"]);
-                        }) => string);
-                  b0as:
-                      | string
-                      | ((d: {
-                            [x: string]: keyof (readonly string[]);
-                        }) => string);
-                  c0is:
-                      | string
-                      | ((d: {
-                            readonly color: keyof (readonly ["blue", "black"]);
-                            readonly shadow: keyof (readonly ["gray", "green"]);
-                        }) => string);
-              }
+            (
+                | string
+                | {
+                      [x: string]: (string | ((d?: undefined) => string))[];
+                      b0is: (
+                          | string
+                          | ((
+                                d?:
+                                    | {
+                                          readonly color: "blue" | "gray";
+                                          readonly heights: "h1" | "h2";
+                                          readonly widths: "w1" | "w2";
+                                      }
+                                    | undefined
+                            ) => string)
+                      )[];
+                      b0as: (
+                          | string
+                          | ((
+                                d?: { [x: string]: string } | undefined
+                            ) => string)
+                      )[];
+                      c0is: (
+                          | string
+                          | ((
+                                d?:
+                                    | {
+                                          readonly color: "blue" | "black";
+                                          readonly shadow: "gray" | "green";
+                                      }
+                                    | undefined
+                            ) => string)
+                      )[];
+                  }
+            )[]
         >();
     });
     describe("unique description error", () => {
@@ -449,12 +468,12 @@ describe("CompoundStyles", () => {
         expect(
             compoundStyle1.compile(
                 baseStyles1.getIdentifier("md:sm_b0s"),
-                () => "./some/file/path.js"
+                (ref: string) => `./${ref}.js`
             )
         ).toMatchInlineSnapshot(`
-          "import BGBXXhXQzMBHMXv from \\"./some/file/path.js\\";
-          import BGBXXhXQzMBHLfF from \\"./some/file/path.js\\";
-          import BGBXXhXQzMECsCD from \\"./some/file/path.js\\";
+          "import BGBXXhXQzMBHMXv from \\"./BGBXXhXQzMBHMXv.js\\";
+          import BGBXXhXQzMBHLfF from \\"./BGBXXhXQzMBHLfF.js\\";
+          import BGBXXhXQzMECsCD from \\"./BGBXXhXQzMECsCD.js\\";
 
           export default {
               b0is: BGBXXhXQzMBHMXv,
