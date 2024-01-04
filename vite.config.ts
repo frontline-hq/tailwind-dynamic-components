@@ -3,6 +3,7 @@ import path from "path";
 import { defineConfig } from "vite";
 import packageJson from "./package.json";
 import nodePolyfills from "rollup-plugin-polyfill-node";
+import { libraryName } from "./src/library.config";
 
 const getPackageName = () => {
     return packageJson.name;
@@ -17,9 +18,8 @@ const getPackageNameCamelCase = () => {
 };
 
 const fileName = {
-    es: `index.mjs`,
-    cjs: `index.cjs`,
-    iife: `index.iife.js`,
+    es: (name: string) => `${name}.mjs`,
+    cjs: (name: string) => `${name}.cjs`,
 };
 
 const formats = Object.keys(fileName) as Array<keyof typeof fileName>;
@@ -29,10 +29,10 @@ module.exports = defineConfig({
     build: {
         ssr: true,
         lib: {
-            entry: path.resolve(__dirname, "src/index.ts"),
-            name: "index",
+            entry: [path.resolve(__dirname, "src/index.ts"), path.resolve(__dirname, "src/plugin.ts")],
+            name: libraryName,
             formats,
-            fileName: format => fileName[format],
+            fileName: (format, entryName) => fileName[format](entryName),
         },
         rollupOptions: {
             external: [
@@ -60,7 +60,6 @@ module.exports = defineConfig({
                     "ast-types": "require('ast-types')",
                     "magic-string": "require('magic-string')",
                     "svelte/compiler": "require('svelte/compiler')",
-					"@sveltejs/vite-plugin-svelte": "require('@sveltejs/vite-plugin-svelte')"
                 },
             },
             plugins: [],

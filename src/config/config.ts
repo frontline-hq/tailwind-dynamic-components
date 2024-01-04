@@ -3,7 +3,6 @@ import { writeFile, stat /* readFile */ } from "fs/promises";
 import { pathToFileURL } from "url";
 /* import { VERSION } from "@sveltejs/kit"; */
 import type { Config as SvelteConfig } from "@sveltejs/kit";
-/* import { findDepPkgJsonPath } from "vitefu"; */
 import { libraryName } from "../library.config";
 import { CompoundStyles, Styles } from "../register";
 
@@ -83,6 +82,7 @@ export async function getTransformConfig(
     await createLibraryConfigIfNotPresentYet();
 
     const libraryConfigModule = (await import(
+        /* @vite-ignore */
         pathToFileURL(await getLibraryConfigFilePath(directory)).toString()
     )) as LibraryConfigModule;
     const libraryConfig = await libraryConfigModule.defineConfig();
@@ -98,6 +98,7 @@ export async function getTransformConfig(
 
     try {
         const { default: svelteConfig } = (await import(
+            /* @vite-ignore */
             pathToFileURL(
                 path.resolve(cwdFolderPath, "svelte.config.js")
             ).toString()
