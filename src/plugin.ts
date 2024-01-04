@@ -5,6 +5,8 @@ import { dedent } from "ts-dedent";
 import { libraryName } from "./library.config";
 import { transformCode } from "./transforms";
 import { newEmittedFiles } from "./transforms/inject";
+import { mkdir, writeFile } from "fs/promises";
+import path from "path";
 
 function printDebug(
     filePath: string,
@@ -30,18 +32,30 @@ function printDebug(
     `);
 }
 
-export const plugin = () => {
+export const plugin: () => Plugin = () => {
     const emitted = newEmittedFiles();
     return {
         name: `vite-plugin-${libraryName}`,
         // makes sure we run before vite-plugin-svelte
-        enforce: "pre" as const,
+        enforce: "pre",
+        async buildStart() {
+            // Make sure that the hidden library directory exists.
+            await mkdir(hiddenDirectoryPath, { recursive: true });
+            // Add a gitignore file in the directory
+            await writeFile(
+                path.resolve(hiddenDirectoryPath, ".gitignore"),
+                "*",
+                { encoding: "utf8" }
+            );
+        },
         resolveId(id) {
             if ([...emitted.values()].some(e => e.fileReference === id))
                 return "\0" + id;
             return;
         },
         async load(id) {
+            //const configFilePath = await getLibraryConfigFilePath();
+            // Reload when config or registration files change
             const config = await getTransformConfig();
             // Load the virtual imports (Our style definitions)
             const found = [...emitted.values()].find(e =>
@@ -59,6 +73,14 @@ export const plugin = () => {
                     resolved: resolved,
                     type: "load",
                 });
+            }
+            // Also print content of virtual file into hidden library directory
+            if (found?.[0] && resolved) {
+                await writeFile(
+                    path.resolve(hiddenDirectoryPath, `./${found?.[0]}.js`),
+                    resolved,
+                    { encoding: "utf8" }
+                );
             }
             return resolved;
         },
@@ -95,5 +117,5 @@ export const plugin = () => {
 
             return transformedCode;
         },
-    } satisfies Plugin;
+    };
 };

@@ -76,7 +76,7 @@ type SearchResult = {
       }
 );
 
-function getFileName(identifier: string) {
+export function getFileName(identifier: string) {
     return `virtual:${shortLibraryName}-${identifier}`;
 }
 
@@ -140,9 +140,7 @@ export function analyzeJsSvelte<AstType extends ASTNode | Ast>(
                         identifier,
                         walker
                     );
-                    const ref =
-                        emittedFiles.get(identifier)?.fileReference ??
-                        getFileName(identifier);
+                    const ref = getFileName(identifier);
                     emittedFiles.set(identifier, {
                         styles: matchingRegistration.compile(
                             identifier,
@@ -152,24 +150,23 @@ export function analyzeJsSvelte<AstType extends ASTNode | Ast>(
                     });
                     if (matchingRegistration instanceof CompoundStyles) {
                         // Construct emittedFiles for each child of compoundStyles.
-                        Object.values(matchingRegistration.styles).forEach(
-                            s => {
-                                const subIdentifier = s.getIdentifier(
-                                    `${
-                                        modifiers ?? ""
-                                    }${variant}${variantDescriptionDelimiter}${
-                                        s.description
-                                    }`
-                                );
-                                const subRef =
-                                    emittedFiles.get(subIdentifier)
-                                        ?.fileReference ??
-                                    getFileName(subIdentifier);
-                                emittedFiles.set(subIdentifier, {
-                                    styles: s.compile(subIdentifier),
-                                    fileReference: subRef,
-                                });
-                            }
+                        await Promise.all(
+                            Object.values(matchingRegistration.styles).map(
+                                async s => {
+                                    const subIdentifier = s.getIdentifier(
+                                        `${
+                                            modifiers ?? ""
+                                        }${variant}${variantDescriptionDelimiter}${
+                                            s.description
+                                        }`
+                                    );
+                                    emittedFiles.set(subIdentifier, {
+                                        styles: await s.compile(subIdentifier),
+                                        fileReference:
+                                            getFileName(subIdentifier),
+                                    });
+                                }
+                            )
                         );
                     }
                     // Replace with alternative import name
