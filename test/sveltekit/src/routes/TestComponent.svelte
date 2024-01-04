@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { test01 } from '../../tailwind-dynamic-components.config';
+	import type { test01 } from './testComponent.tdc';
 	import { resolveProp } from '../../../../dist';
 
 	export let styles: (typeof test01)['propType'];
