@@ -10,8 +10,9 @@ import { CompoundStyles, Styles } from "../register";
 export const configFileName = `${libraryName}.config.js` as const;
 
 const cwdFolderPath = process.cwd();
-const getLibraryConfigFilePath = async (directory: string = process.cwd()) =>
-    path.resolve(await findConfigFileFolder(directory), configFileName);
+export const getLibraryConfigFilePath = async (
+    directory: string = process.cwd()
+) => path.resolve(await findConfigFileFolder(directory), configFileName);
 
 export async function findConfigFileFolder(directory: string = process.cwd()) {
     if (

@@ -1,10 +1,12 @@
 import type { Plugin } from "vite";
-import { getTransformConfig } from "./config/config";
+import { getLibraryConfigFilePath, getTransformConfig } from "./config/config";
 import { getFileInformation } from "./fileInformation";
 import { dedent } from "ts-dedent";
-import { libraryName } from "./library.config";
+import { libraryName, shortLibraryName } from "./library.config";
 import { transformCode } from "./transforms";
 import { newEmittedFiles } from "./transforms/inject";
+import { mkdir, writeFile } from "fs/promises";
+import path from "path";
 
 function printDebug(
     filePath: string,
@@ -32,23 +34,38 @@ function printDebug(
 
 export const plugin = () => {
     const emitted = newEmittedFiles();
+    const hiddenDirectoryPath = path.resolve(
+        process.cwd(),
+        `.${shortLibraryName}`
+    );
     return {
         name: `vite-plugin-${libraryName}`,
         // makes sure we run before vite-plugin-svelte
         enforce: "pre" as const,
+        async buildStart() {
+            // Make sure that the hidden library directory exists.
+            await mkdir(hiddenDirectoryPath, { recursive: true });
+            // Add a gitignore file in the directory
+            await writeFile(
+                path.resolve(hiddenDirectoryPath, ".gitignore"),
+                "*"
+            );
+        },
         resolveId(id) {
             if ([...emitted.values()].some(e => e.fileReference === id))
                 return "\0" + id;
             return;
         },
         async load(id) {
+            const configFilePath = await getLibraryConfigFilePath();
+            this.addWatchFile(configFilePath);
             const config = await getTransformConfig();
             // Load the virtual imports (Our style definitions)
-            const found = [...emitted.values()].find(e =>
-                id.includes(e.fileReference)
+            const found = [...emitted.entries()].find(([, v]) =>
+                id.includes(v.fileReference)
             );
 
-            const { styles: resolved, fileReference } = found ?? {};
+            const { styles: resolved, fileReference } = found?.[1] ?? {};
             if (!fileReference) return;
             const fileInformation = getFileInformation(config, fileReference);
             if (!fileInformation) return;
@@ -59,6 +76,13 @@ export const plugin = () => {
                     resolved: resolved,
                     type: "load",
                 });
+            }
+            // Also print content of virtual file into hidden library directory
+            if (found?.[0] && resolved) {
+                await writeFile(
+                    path.resolve(hiddenDirectoryPath, `./${found?.[0]}.js`),
+                    resolved
+                );
             }
             return resolved;
         },
@@ -72,8 +96,15 @@ export const plugin = () => {
             if (
                 fileInformation.type === "registration" ||
                 fileInformation.type === "configuration"
-            )
+            ) {
+                // Call this.reload to reload virtual module
+                emitted.forEach(e =>
+                    this.resolve(e.fileReference, undefined, {
+                        skipSelf: false,
+                    })
+                );
                 return undefined;
+            }
 
             const transformedCode = await transformCode(
                 config,
