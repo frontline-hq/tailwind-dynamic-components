@@ -1,8 +1,4 @@
-import { Styles } from '../../dist/index.mjs';
-
-export const test01 = new Styles('test01', { variants: ['sm', 'md'] })
-	.staticStyles('bg-green-500')
-	.dynamicStyles((v) => `text-${v('xl', { sm: '2xl' })}`);
+import { test01 } from './src/routes/testComponent.tdc.js';
 
 export async function defineConfig() {
 	return {
