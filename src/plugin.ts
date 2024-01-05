@@ -32,7 +32,7 @@ function printDebug(
     `);
 }
 
-export const plugin: () => Plugin = () => {
+export function plugin(): Plugin {
     const hiddenDirectoryPath = path.resolve(
         process.cwd(),
         `.${shortLibraryName}`
@@ -122,4 +122,4 @@ export const plugin: () => Plugin = () => {
             return transformedCode;
         },
     };
-};
+}
