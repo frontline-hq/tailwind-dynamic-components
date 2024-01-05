@@ -9,11 +9,11 @@ export const transformJs = async (
     emitted: EmittedFiles
 ) => {
     const jsAst = parse(code, { parser: require("acorn") });
-    const { elementsToReplace, importsToAdd } = analyzeJsSvelte(
+    const { elementsToReplace, importsToAdd } = await analyzeJsSvelte(
         jsAst,
         config.library.registrations,
         emitted,
-        (await import("estree-walker")).walk
+        (await import("estree-walker")).asyncWalk
     );
     const s = new MagicString(code);
 

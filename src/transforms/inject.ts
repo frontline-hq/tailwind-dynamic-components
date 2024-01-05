@@ -3,12 +3,11 @@ import {
     Styles,
     variantDescriptionDelimiter,
 } from "../register";
-import type { walk as jsWalk } from "estree-walker";
+import type { asyncWalk } from "estree-walker";
 import { Node } from "estree";
 import { shortLibraryName } from "../library.config";
 import { findDeclarableIdentifier } from "../ast/ast";
 import { Ast, Attribute, Text } from "svelte/types/compiler/interfaces";
-import { walk as svelteWalk } from "svelte/compiler";
 import { flattenAndCheckRegistrations } from "../config/config";
 import { ASTNode, namedTypes as n } from "ast-types";
 
@@ -80,9 +79,9 @@ export function getFileName(identifier: string) {
     return `virtual:${shortLibraryName}-${identifier}`;
 }
 
-function runOnSearchResult(
+async function runOnSearchResult(
     node: ASTNode,
-    runOn: (searchResult: SearchResult) => void
+    runOn: (searchResult: SearchResult) => Promise<void>
 ) {
     const element = n.Literal.check(node)
         ? typeof node.value === "string"
@@ -94,17 +93,17 @@ function runOnSearchResult(
               }
             : undefined
         : templateLiteralValue(node) ?? attributeTextValue(node);
-    if (element != undefined) runOn(element);
+    if (element != undefined) await runOn(element);
 }
 
 /* code: the code of the page to inject into */
 /* registrations: the user provided registrations */
 /* emittedIdentifiers: the identifiers already processed and placed in the emitted file */
-export function analyzeJsSvelte<AstType extends ASTNode | Ast>(
+export async function analyzeJsSvelte<AstType extends ASTNode | Ast>(
     ast: AstType,
     registrations: (Styles | CompoundStyles)[],
     emittedFiles: EmittedFiles,
-    walker: AstType extends ASTNode ? typeof jsWalk : typeof svelteWalk
+    walker: typeof asyncWalk
 ) {
     // Imports to add
     const importsToAdd = new Map<string, string>();
@@ -115,12 +114,12 @@ export function analyzeJsSvelte<AstType extends ASTNode | Ast>(
     const completeRegistrations = flattenAndCheckRegistrations(registrations);
 
     // Find and replace occurences of identifiers
-    walker(ast as Node, {
-        enter(node: ASTNode) {
+    await walker(ast as Node, {
+        async enter(node: ASTNode) {
             // 1. Check whether it is the right node type
             // 2. If yes, Check for a match
 
-            runOnSearchResult(node, literal => {
+            await runOnSearchResult(node, async literal => {
                 const matchingRegistration = completeRegistrations.find(r => {
                     return r.matchDescription(literal.value);
                 });
@@ -135,7 +134,7 @@ export function analyzeJsSvelte<AstType extends ASTNode | Ast>(
                     const variant = matchingRegistration.matchVariant(
                         literal.value
                     );
-                    const declarableIdentifier = findDeclarableIdentifier(
+                    const declarableIdentifier = await findDeclarableIdentifier(
                         ast,
                         identifier,
                         walker

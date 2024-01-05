@@ -2,7 +2,7 @@ import type { Plugin } from "vite";
 import { getTransformConfig } from "./config/config";
 import { getFileInformation } from "./fileInformation";
 import { dedent } from "ts-dedent";
-import { libraryName } from "./library.config";
+import { libraryName, shortLibraryName } from "./library.config";
 import { transformCode } from "./transforms";
 import { newEmittedFiles } from "./transforms/inject";
 import { mkdir, writeFile } from "fs/promises";
@@ -33,6 +33,10 @@ function printDebug(
 }
 
 export const plugin: () => Plugin = () => {
+    const hiddenDirectoryPath = path.resolve(
+        process.cwd(),
+        `.${shortLibraryName}`
+    );
     const emitted = newEmittedFiles();
     return {
         name: `vite-plugin-${libraryName}`,
@@ -58,11 +62,11 @@ export const plugin: () => Plugin = () => {
             // Reload when config or registration files change
             const config = await getTransformConfig();
             // Load the virtual imports (Our style definitions)
-            const found = [...emitted.values()].find(e =>
+            const found = [...emitted.entries()].find(([, e]) =>
                 id.includes(e.fileReference)
             );
 
-            const { styles: resolved, fileReference } = found ?? {};
+            const { styles: resolved, fileReference } = found?.[1] ?? {};
             if (!fileReference) return;
             const fileInformation = getFileInformation(config, fileReference);
             if (!fileInformation) return;

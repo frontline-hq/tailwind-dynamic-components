@@ -1,9 +1,10 @@
-import { parse, preprocess, walk } from "svelte/compiler";
+import { parse, preprocess } from "svelte/compiler";
 import type { TransformConfig } from "../config/config.js";
 import { EmittedFiles, analyzeJsSvelte } from "./inject.js";
 import MagicString, { SourceMap } from "magic-string";
 import { Program } from "estree";
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
+import { asyncWalk } from "estree-walker";
 
 export const transformSvelte = async (
     config: TransformConfig,
@@ -13,16 +14,17 @@ export const transformSvelte = async (
     const transformed = await preprocess(code, [
         vitePreprocess({ script: true, style: true }),
         {
-            markup: ({ content }) => {
+            markup: async ({ content }) => {
                 const svelteAst = parse(content);
                 const s = new MagicString(content);
 
-                const { elementsToReplace, importsToAdd } = analyzeJsSvelte(
-                    svelteAst,
-                    config.library.registrations,
-                    emitted,
-                    walk
-                );
+                const { elementsToReplace, importsToAdd } =
+                    await analyzeJsSvelte(
+                        svelteAst,
+                        config.library.registrations,
+                        emitted,
+                        asyncWalk
+                    );
 
                 const instanceContent = svelteAst.instance?.content as
                     | (Program & { start: number; end: number })
