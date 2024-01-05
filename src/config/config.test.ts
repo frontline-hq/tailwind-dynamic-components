@@ -75,7 +75,6 @@ describe("config", () => {
                 CompoundStyles {
                   "add": [Function],
                   "addInline": [Function],
-                  "compile": [Function],
                   "description": "b0s",
                   "descriptionRegex": /\\(\\?<=\\^\\(\\[\\^\\\\t\\\\n\\\\r\\\\s:\\]\\+:\\)\\*\\)b0s\\$/g,
                   "identifierAlphabet": "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz",
