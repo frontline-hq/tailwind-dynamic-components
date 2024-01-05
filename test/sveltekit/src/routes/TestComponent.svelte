@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { test01 } from './testComponent.tdc.ts';
 	import { resolveProp } from '../../../../dist/index.mjs';
+	import { test } from './testFile.js';
 
 	export let styles: (typeof test01)['propType'];
 

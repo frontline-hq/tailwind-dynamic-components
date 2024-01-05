@@ -8,7 +8,9 @@ export const transformJs = async (
     code: string,
     emitted: EmittedFiles
 ) => {
-    const jsAst = parse(code, { parser: await import("acorn") });
+    const jsAst = parse(code, {
+        parser: await import("recast/parsers/typescript.js"),
+    });
     const { elementsToReplace, importsToAdd } = await analyzeJsSvelte(
         jsAst,
         config.library.registrations,
