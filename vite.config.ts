@@ -47,7 +47,8 @@ module.exports = defineConfig({
                 "magic-string",
                 "svelte",
 				"@sveltejs/kit",
-				"@sveltejs/vite-plugin-svelte"
+				"@sveltejs/vite-plugin-svelte",
+                "@babel/parser"
             ],
             output: {
                 globals: {
@@ -60,6 +61,7 @@ module.exports = defineConfig({
                     "ast-types": "require('ast-types')",
                     "magic-string": "require('magic-string')",
                     "svelte/compiler": "require('svelte/compiler')",
+                    "@babel/parser": "require('@babel/parser')"
                 },
             },
             plugins: [],
