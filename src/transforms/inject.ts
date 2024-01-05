@@ -138,7 +138,7 @@ export async function analyzeJsSvelte<AstType extends ASTNode | Ast>(
                     );
                     const ref = getFileName(identifier);
                     emittedFiles.set(identifier, {
-                        styles: matchingRegistration.compile(
+                        styles: await matchingRegistration.compile(
                             identifier,
                             getFileName
                         ),
