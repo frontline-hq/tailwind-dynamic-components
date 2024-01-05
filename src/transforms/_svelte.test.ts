@@ -2,8 +2,7 @@ import { describe, test, expect } from "vitest";
 import { transformSvelte } from "./_.svelte";
 import { svelteTestCode01 } from "./inject.test";
 import { newEmittedFiles } from "./inject";
-import merge from "lodash.merge";
-import { TransformConfig, getTransformConfig } from "../config/config";
+import { getTransformConfig } from "../config/config";
 import { CompoundStyles, Styles } from "../register";
 import dedent from "ts-dedent";
 
@@ -11,8 +10,8 @@ const emitted01 = newEmittedFiles();
 
 describe("process svelte", async () => {
     const result = await transformSvelte(
-        merge(await getTransformConfig(__dirname), {
-            library: {
+        await getTransformConfig(
+            {
                 debug: false,
                 registrations: [
                     new Styles("b0is", {
@@ -24,7 +23,8 @@ describe("process svelte", async () => {
                     new CompoundStyles("b0s", {}).addInline("b0as"),
                 ],
             },
-        }) as TransformConfig,
+            __dirname
+        ),
         svelteTestCode01,
         emitted01
     );
@@ -66,8 +66,8 @@ describe("process svelte", async () => {
 
     test("typescript", async () => {
         const result = await transformSvelte(
-            merge(await getTransformConfig(__dirname), {
-                library: {
+            await getTransformConfig(
+                {
                     debug: false,
                     registrations: [
                         new Styles("test01", {
@@ -75,7 +75,8 @@ describe("process svelte", async () => {
                         }).staticStyles("bg-green-400"),
                     ],
                 },
-            }) as TransformConfig,
+                __dirname
+            ),
             dedent`
             <script lang="ts" context="module">
                 type AnotherTest = string
@@ -101,8 +102,8 @@ describe("process svelte", async () => {
 
     test("no script tag", async () => {
         const result = await transformSvelte(
-            merge(await getTransformConfig(__dirname), {
-                library: {
+            await getTransformConfig(
+                {
                     debug: false,
                     registrations: [
                         new Styles("test01", {
@@ -110,7 +111,8 @@ describe("process svelte", async () => {
                         }).staticStyles("bg-green-400"),
                     ],
                 },
-            }) as TransformConfig,
+                __dirname
+            ),
             dedent`
             <div styles="sm_test01" />
             `,

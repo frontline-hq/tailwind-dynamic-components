@@ -7,7 +7,7 @@ import { newEmittedFiles } from "./inject.js";
 
 // TODO: throw errors if something is not supported and show a guide how to add the functionality manually
 
-export const transformCode = (
+export const transformCode = async (
     config: TransformConfig,
     code: string,
     { type }: FileInformation,
@@ -18,9 +18,9 @@ export const transformCode = (
 
     switch (type) {
         case "*.js":
-            return transformJs(config, code, emitted);
+            return await transformJs(config, code, emitted);
         case "*.svelte":
-            return transformSvelte(config, code, emitted);
+            return await transformSvelte(config, code, emitted);
     }
     return;
 

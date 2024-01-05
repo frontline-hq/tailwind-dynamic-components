@@ -138,8 +138,11 @@ export class Styles<
 > extends BaseStyles<Description, Variants> {
     dependencies: Dependencies;
     styles: [
-        Array<Parameters<typeof this.staticStyles>[0]>,
-        Array<Parameters<typeof this.dynamicStyles>[0]>,
+        Array<((d: D<Dependencies>) => DReturn | string) | string>,
+        Array<
+            | ((v: V<Variants[number]>, d: D<Dependencies>) => DReturn | string)
+            | string
+        >,
     ];
     propType = [
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -427,7 +430,7 @@ export class CompoundStyles<
         ).code;
     };
 }
-
+/* 
 export type PropType<S extends Styles | CompoundStyles> = S extends Styles
     ? (dependencies: {
           [Dependency in keyof S["dependencies"]]: S["dependencies"][Dependency][number];
@@ -444,7 +447,7 @@ export type PropType<S extends Styles | CompoundStyles> = S extends Styles
                   S["variants"]
               >
           >;
-      };
+      }; */
 
 export function resolveProp<Dependencies>(
     prop: Array<((d: Dependencies) => string) | string>,

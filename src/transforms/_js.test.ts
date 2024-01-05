@@ -2,16 +2,15 @@ import { describe, test, expect } from "vitest";
 import { transformJs } from "./_.js";
 import { jsTestCode01 } from "./inject.test";
 import { newEmittedFiles } from "./inject";
-import { TransformConfig, getTransformConfig } from "../config/config.js";
-import merge from "lodash.merge";
+import { getTransformConfig } from "../config/config.js";
 import { CompoundStyles, Styles } from "../register.js";
 
 const emitted01 = newEmittedFiles();
 
 describe("process js", async () => {
     const result = await transformJs(
-        merge(await getTransformConfig(__dirname), {
-            library: {
+        await getTransformConfig(
+            {
                 debug: false,
                 registrations: [
                     new Styles("b0is", {
@@ -23,7 +22,8 @@ describe("process js", async () => {
                     new CompoundStyles("b0s", {}).addInline("b0as"),
                 ],
             },
-        }) as TransformConfig,
+            __dirname
+        ),
         jsTestCode01,
         emitted01
     );

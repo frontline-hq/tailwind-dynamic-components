@@ -1,5 +1,5 @@
 import path from "path";
-import { writeFile, stat /* readFile */ } from "fs/promises";
+import { stat /* readFile */ } from "fs/promises";
 import { pathToFileURL } from "url";
 /* import { VERSION } from "@sveltejs/kit"; */
 import type { Config as SvelteConfig } from "@sveltejs/kit";
@@ -7,10 +7,6 @@ import { libraryName } from "../library.config";
 import { CompoundStyles, Styles } from "../register";
 
 export const configFileName = `${libraryName}.config.js` as const;
-
-const cwdFolderPath = process.cwd();
-const getLibraryConfigFilePath = async (directory: string = process.cwd()) =>
-    path.resolve(await findConfigFileFolder(directory), configFileName);
 
 export async function findConfigFileFolder(directory: string = process.cwd()) {
     if (
@@ -27,16 +23,10 @@ export const doesPathExist = async (path: string) =>
 
 /* type VersionString = `${number}.${number}.${number}`; */
 
-type LibraryConfigModule = {
-    defineConfig: DefineConfig;
-};
-
-type LibraryConfig = {
+export type LibraryConfig = {
     debug: boolean;
     registrations: Array<CompoundStyles | Styles>;
 };
-
-type DefineConfig = () => LibraryConfig;
 
 export type TransformConfig = {
     cwdFolderPath: string;
@@ -76,16 +66,9 @@ export function flattenAndCheckRegistrations(
 }
 
 export async function getTransformConfig(
-    directory: string = process.cwd()
+    libraryConfig: LibraryConfig,
+    cwdFolderPath = process.cwd()
 ): Promise<TransformConfig> {
-    await createLibraryConfigIfNotPresentYet();
-
-    const libraryConfigModule = (await import(
-        /* @vite-ignore */
-        pathToFileURL(await getLibraryConfigFilePath(directory)).toString()
-    )) as LibraryConfigModule;
-    const libraryConfig = await libraryConfigModule.defineConfig();
-
     // Process registrations in libraryconfig.
     const completeRegistrations = flattenAndCheckRegistrations(
         libraryConfig.registrations
@@ -144,30 +127,6 @@ export async function getTransformConfig(
         svelteKit: svelteKitConfigData,
     };
 }
-
-const createLibraryConfigIfNotPresentYet = async (
-    directory: string = process.cwd()
-) => {
-    const libraryConfigExists = await doesPathExist(
-        await getLibraryConfigFilePath(directory)
-    );
-    if (libraryConfigExists) return;
-
-    /* TODO: Inject config type definitin into defineConfig file */
-
-    return writeFile(
-        await getLibraryConfigFilePath(directory),
-        `
-export async function defineConfig() {
-	return {
-		debug: false,
-        /* Styles within CompoundStyles have to be registered seperately for their detection */
-        registrations: []
-	}
-}
-`
-    );
-};
 
 /* const getInstalledVersionOfPackage = async (pkg: string) => {
     const pkgJsonPath = await findDepPkgJsonPath(pkg, cwdFolderPath);

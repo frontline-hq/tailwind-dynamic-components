@@ -1,5 +1,5 @@
 import path from "path";
-import { configFileName, type TransformConfig } from "./config/config";
+import { type TransformConfig } from "./config/config";
 
 import { shortLibraryName } from "./library.config";
 
@@ -35,7 +35,7 @@ export const getFileInformation = (
     if (scriptExtensions.includes(ext)) {
         if (name.endsWith(`${shortLibraryName}`))
             return { type: "registration" };
-        if (configFileName.includes(name))
+        if ("vite.config.ts".includes(name))
             return {
                 type: "configuration",
             };

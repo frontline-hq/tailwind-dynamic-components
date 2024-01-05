@@ -1,9 +1,10 @@
 import { describe, test, expect } from "vitest";
 import { newEmittedFiles, analyzeJsSvelte } from "./inject";
 import { parse as jsParse } from "recast";
-import { walk } from "estree-walker";
-import { parse as svelteParse, walk as svelteWalk } from "svelte/compiler";
+import { asyncWalk } from "estree-walker";
+import { parse as svelteParse } from "svelte/compiler";
 import { CompoundStyles, Styles } from "../register";
+import { flattenAndCheckRegistrations } from "../config/config";
 
 export const styles1 = new Styles("b0is");
 export const styles2 = new Styles("b0is", { variants: ["sm", "md"] });
@@ -47,13 +48,15 @@ const svelteAst = svelteParse(svelteTestCode01);
 
 describe("analyze", () => {
     describe("js", () => {
-        test("elements to replace", () => {
+        test("elements to replace", async () => {
             expect(
-                analyzeJsSvelte(
-                    jsAst,
-                    [styles3, compoundStyle],
-                    newEmittedFiles(),
-                    walk
+                (
+                    await analyzeJsSvelte(
+                        jsAst,
+                        flattenAndCheckRegistrations([styles3, compoundStyle]),
+                        newEmittedFiles(),
+                        asyncWalk
+                    )
                 ).elementsToReplace
             ).toMatchInlineSnapshot(`
               [
@@ -96,13 +99,18 @@ describe("analyze", () => {
             `);
         });
         describe("imports to add", () => {
-            test("registrations with missing sub style from compoundStyle", () => {
+            test("registrations with missing sub style from compoundStyle", async () => {
                 expect(
-                    analyzeJsSvelte(
-                        jsAst,
-                        [styles3, compoundStyle],
-                        newEmittedFiles(),
-                        walk
+                    (
+                        await analyzeJsSvelte(
+                            jsAst,
+                            flattenAndCheckRegistrations([
+                                styles3,
+                                compoundStyle,
+                            ]),
+                            newEmittedFiles(),
+                            asyncWalk
+                        )
                     ).importsToAdd
                 ).toMatchInlineSnapshot(`
                   Map {
@@ -114,13 +122,18 @@ describe("analyze", () => {
                   }
                 `);
             });
-            test("registrations with sub style from compoundStyle", () => {
+            test("registrations with sub style from compoundStyle", async () => {
                 expect(
-                    analyzeJsSvelte(
-                        jsAst,
-                        [styles3, compoundStyle],
-                        newEmittedFiles(),
-                        walk
+                    (
+                        await analyzeJsSvelte(
+                            jsAst,
+                            flattenAndCheckRegistrations([
+                                styles3,
+                                compoundStyle,
+                            ]),
+                            newEmittedFiles(),
+                            asyncWalk
+                        )
                     ).importsToAdd
                 ).toMatchInlineSnapshot(`
                   Map {
@@ -133,13 +146,15 @@ describe("analyze", () => {
                 `);
             });
         });
-        test("emitted files", () => {
+        test("emitted files", async () => {
             expect(
-                analyzeJsSvelte(
-                    jsAst,
-                    [styles3, compoundStyle],
-                    newEmittedFiles(),
-                    walk
+                (
+                    await analyzeJsSvelte(
+                        jsAst,
+                        flattenAndCheckRegistrations([styles3, compoundStyle]),
+                        newEmittedFiles(),
+                        asyncWalk
+                    )
                 ).emittedFiles
             ).toMatchInlineSnapshot(`
               Map {
@@ -186,13 +201,15 @@ describe("analyze", () => {
         }); */
     });
     describe("svelte", () => {
-        test("elements to replace", () => {
+        test("elements to replace", async () => {
             expect(
-                analyzeJsSvelte(
-                    svelteAst,
-                    [styles3, compoundStyle],
-                    newEmittedFiles(),
-                    svelteWalk
+                (
+                    await analyzeJsSvelte(
+                        svelteAst,
+                        flattenAndCheckRegistrations([styles3, compoundStyle]),
+                        newEmittedFiles(),
+                        asyncWalk
+                    )
                 ).elementsToReplace
             ).toMatchInlineSnapshot(`
               [
@@ -280,13 +297,18 @@ describe("analyze", () => {
             `);
         });
         describe("imports to add", () => {
-            test("registrations with missing sub style from compoundStyle", () => {
+            test("registrations with missing sub style from compoundStyle", async () => {
                 expect(
-                    analyzeJsSvelte(
-                        svelteAst,
-                        [styles3, compoundStyle],
-                        newEmittedFiles(),
-                        svelteWalk
+                    (
+                        await analyzeJsSvelte(
+                            svelteAst,
+                            flattenAndCheckRegistrations([
+                                styles3,
+                                compoundStyle,
+                            ]),
+                            newEmittedFiles(),
+                            asyncWalk
+                        )
                     ).importsToAdd
                 ).toMatchInlineSnapshot(`
                   Map {
@@ -299,13 +321,18 @@ describe("analyze", () => {
                   }
                 `);
             });
-            test("registrations with sub style from compoundStyle", () => {
+            test("registrations with sub style from compoundStyle", async () => {
                 expect(
-                    analyzeJsSvelte(
-                        svelteAst,
-                        [styles3, compoundStyle],
-                        newEmittedFiles(),
-                        svelteWalk
+                    (
+                        await analyzeJsSvelte(
+                            svelteAst,
+                            flattenAndCheckRegistrations([
+                                styles3,
+                                compoundStyle,
+                            ]),
+                            newEmittedFiles(),
+                            asyncWalk
+                        )
                     ).importsToAdd
                 ).toMatchInlineSnapshot(`
                   Map {
@@ -319,13 +346,15 @@ describe("analyze", () => {
                 `);
             });
         });
-        test("emitted files", () => {
+        test("emitted files", async () => {
             expect(
-                analyzeJsSvelte(
-                    svelteAst,
-                    [styles3, compoundStyle],
-                    newEmittedFiles(),
-                    svelteWalk
+                (
+                    await analyzeJsSvelte(
+                        svelteAst,
+                        flattenAndCheckRegistrations([styles3, compoundStyle]),
+                        newEmittedFiles(),
+                        asyncWalk
+                    )
                 ).emittedFiles
             ).toMatchInlineSnapshot(`
               Map {
