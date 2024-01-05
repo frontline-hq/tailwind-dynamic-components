@@ -1,5 +1,5 @@
 import type { Plugin } from "vite";
-import { getTransformConfig } from "./config/config";
+import { LibraryConfig, getTransformConfig } from "./config/config";
 import { getFileInformation } from "./fileInformation";
 import { dedent } from "ts-dedent";
 import { libraryName, shortLibraryName } from "./library.config";
@@ -32,7 +32,7 @@ function printDebug(
     `);
 }
 
-export function plugin(): Plugin {
+export function plugin(libraryConfig: LibraryConfig): Plugin {
     const hiddenDirectoryPath = path.resolve(
         process.cwd(),
         `.${shortLibraryName}`
@@ -60,7 +60,7 @@ export function plugin(): Plugin {
         async load(id) {
             //const configFilePath = await getLibraryConfigFilePath();
             // Reload when config or registration files change
-            const config = await getTransformConfig();
+            const config = await getTransformConfig(libraryConfig);
             // Load the virtual imports (Our style definitions)
             const found = [...emitted.entries()].find(([, e]) =>
                 id.includes(e.fileReference)
@@ -89,7 +89,7 @@ export function plugin(): Plugin {
             return resolved;
         },
         async transform(code, id) {
-            const config = await getTransformConfig();
+            const config = await getTransformConfig(libraryConfig);
 
             const fileInformation = getFileInformation(config, id);
             if (!fileInformation) return null;

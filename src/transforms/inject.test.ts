@@ -4,6 +4,7 @@ import { parse as jsParse } from "recast";
 import { asyncWalk } from "estree-walker";
 import { parse as svelteParse } from "svelte/compiler";
 import { CompoundStyles, Styles } from "../register";
+import { flattenAndCheckRegistrations } from "../config/config";
 
 export const styles1 = new Styles("b0is");
 export const styles2 = new Styles("b0is", { variants: ["sm", "md"] });
@@ -52,7 +53,7 @@ describe("analyze", () => {
                 (
                     await analyzeJsSvelte(
                         jsAst,
-                        [styles3, compoundStyle],
+                        flattenAndCheckRegistrations([styles3, compoundStyle]),
                         newEmittedFiles(),
                         asyncWalk
                     )
@@ -103,7 +104,10 @@ describe("analyze", () => {
                     (
                         await analyzeJsSvelte(
                             jsAst,
-                            [styles3, compoundStyle],
+                            flattenAndCheckRegistrations([
+                                styles3,
+                                compoundStyle,
+                            ]),
                             newEmittedFiles(),
                             asyncWalk
                         )
@@ -123,7 +127,10 @@ describe("analyze", () => {
                     (
                         await analyzeJsSvelte(
                             jsAst,
-                            [styles3, compoundStyle],
+                            flattenAndCheckRegistrations([
+                                styles3,
+                                compoundStyle,
+                            ]),
                             newEmittedFiles(),
                             asyncWalk
                         )
@@ -144,7 +151,7 @@ describe("analyze", () => {
                 (
                     await analyzeJsSvelte(
                         jsAst,
-                        [styles3, compoundStyle],
+                        flattenAndCheckRegistrations([styles3, compoundStyle]),
                         newEmittedFiles(),
                         asyncWalk
                     )
@@ -199,7 +206,7 @@ describe("analyze", () => {
                 (
                     await analyzeJsSvelte(
                         svelteAst,
-                        [styles3, compoundStyle],
+                        flattenAndCheckRegistrations([styles3, compoundStyle]),
                         newEmittedFiles(),
                         asyncWalk
                     )
@@ -295,7 +302,10 @@ describe("analyze", () => {
                     (
                         await analyzeJsSvelte(
                             svelteAst,
-                            [styles3, compoundStyle],
+                            flattenAndCheckRegistrations([
+                                styles3,
+                                compoundStyle,
+                            ]),
                             newEmittedFiles(),
                             asyncWalk
                         )
@@ -316,7 +326,10 @@ describe("analyze", () => {
                     (
                         await analyzeJsSvelte(
                             svelteAst,
-                            [styles3, compoundStyle],
+                            flattenAndCheckRegistrations([
+                                styles3,
+                                compoundStyle,
+                            ]),
                             newEmittedFiles(),
                             asyncWalk
                         )
@@ -338,7 +351,7 @@ describe("analyze", () => {
                 (
                     await analyzeJsSvelte(
                         svelteAst,
-                        [styles3, compoundStyle],
+                        flattenAndCheckRegistrations([styles3, compoundStyle]),
                         newEmittedFiles(),
                         asyncWalk
                     )

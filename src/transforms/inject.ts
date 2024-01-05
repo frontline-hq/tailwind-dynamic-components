@@ -8,7 +8,6 @@ import { Node } from "estree";
 import { shortLibraryName } from "../library.config";
 import { findDeclarableIdentifier } from "../ast/ast";
 import { Ast, Attribute, Text } from "svelte/types/compiler/interfaces";
-import { flattenAndCheckRegistrations } from "../config/config";
 import { ASTNode, namedTypes as n } from "ast-types";
 
 export function newEmittedFiles() {
@@ -111,8 +110,6 @@ export async function analyzeJsSvelte<AstType extends ASTNode | Ast>(
         declarableIdentifier: string;
     } & SearchResult)[] = [];
 
-    const completeRegistrations = flattenAndCheckRegistrations(registrations);
-
     // Find and replace occurences of identifiers
     await walker(ast as Node, {
         async enter(node: ASTNode) {
@@ -120,7 +117,7 @@ export async function analyzeJsSvelte<AstType extends ASTNode | Ast>(
             // 2. If yes, Check for a match
 
             await runOnSearchResult(node, async literal => {
-                const matchingRegistration = completeRegistrations.find(r => {
+                const matchingRegistration = registrations.find(r => {
                     return r.matchDescription(literal.value);
                 });
                 // 3. If matching
