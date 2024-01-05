@@ -1,10 +1,7 @@
 import baseX from "base-x";
-import { print, types } from "recast";
-const b = types.builders;
+import { builders as b, namedTypes as n } from "ast-types";
 
-type DReturn = (
-    modifiers?: string | undefined
-) => types.namedTypes.LogicalExpression;
+type DReturn = (modifiers?: string | undefined) => n.LogicalExpression;
 
 type DParameterValue = string | DReturn;
 type DParameters<DependencyKeys extends string> =
@@ -232,7 +229,8 @@ export class Styles<
                 )
             );
 
-    compile(identifier: string) {
+    async compile(identifier: string) {
+        const print = (await import("recast")).print;
         const literal = this.getLiteral(identifier);
         const variant = this.matchVariant(literal);
         const modifiers = this.matchModifiers(literal);
@@ -367,10 +365,11 @@ export class CompoundStyles<
         styles: Styles<Description, Variants, Dependencies>
     ) => this.addInline(styles.description, styles);
 
-    compile = (
+    async compile(
         identifier: string,
         getFileName: (identifier: string) => string
-    ) => {
+    ) {
+        const print = (await import("recast")).print;
         const literal = this.getLiteral(identifier);
         const variant = this.matchVariant(literal);
         const modifiers = this.matchModifiers(literal);
@@ -428,7 +427,7 @@ export class CompoundStyles<
                 ),
             ])
         ).code;
-    };
+    }
 }
 /* 
 export type PropType<S extends Styles | CompoundStyles> = S extends Styles
@@ -453,11 +452,12 @@ export function resolveProp<Dependencies>(
     prop: Array<((d: Dependencies) => string) | string>,
     dependencies: Dependencies
 ) {
-    return prop
-        .map(p => {
-            if (typeof p === "string")
-                throw new Error(`Couldn't resolve Style "${p}"`);
-            return p(dependencies);
-        })
-        .join(" ");
+    const mapped = prop.flatMap(p => {
+        if (typeof p === "string")
+            throw new Error(`Couldn't resolve Style "${p}"`);
+        return p(dependencies).split(
+            new RegExp(`[${whitespaceCharsRegex}]+`, "g")
+        );
+    });
+    return [...new Set(mapped)].join(" ");
 }

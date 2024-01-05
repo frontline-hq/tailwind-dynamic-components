@@ -365,8 +365,8 @@ export const compoundStyle1 = new CompoundStyles("b0s", {
     });
 
 describe("Styles", () => {
-    test("compile", () => {
-        expect(styles1.compile(baseStyles1.getIdentifier("md:sm_b0is")))
+    test("compile", async () => {
+        expect(await styles1.compile(baseStyles1.getIdentifier("md:sm_b0is")))
             .toMatchInlineSnapshot(`
           "export default ({color, heights, widths} = {}) => \`\${({
               blue: \\"text-blue-500\\",
@@ -464,9 +464,9 @@ describe("CompoundStyles", () => {
             } catch (error) {}
         });
     });
-    test("compile", () => {
+    test("compile", async () => {
         expect(
-            compoundStyle1.compile(
+            await compoundStyle1.compile(
                 baseStyles1.getIdentifier("md:sm_b0s"),
                 (ref: string) => `./${ref}.js`
             )

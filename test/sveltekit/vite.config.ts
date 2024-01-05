@@ -5,7 +5,7 @@ import { test01 } from './src/routes/testComponent.tdc';
 
 export default defineConfig({
 	plugins: [plugin({
-		debug: true,
+		debug: false,
 		/* Styles within CompoundStyles have to be registered seperately for their detection */
 		registrations: [test01]
 	}), sveltekit()],
