@@ -135,31 +135,37 @@ The registration needs multiple types of information:
 -   Styles (in dependence of the registration properties) ✅
 
 ```ts
-type IconProperties = {
-    size: ["lg", "xl"];
-};
-type Properties = {
-    destructive: "true" | "false";
-    hierarchy: ["primary", "..."];
-    size: ["sm", "md"];
-};
-const obj: { [k: Properties["destructive"]]: string } = {};
+const iconRegistration = new Registration({
+    identifier: "icon",
+    props: { size: ["md", "lg"] },
+    styles: () => ({
+        a: "",
+    }),
+    dependencies: {},
+    mappings: {},
+});
 
-const registration = new Styles<Properties>({
-    description: "button",
+const registration = new Registration({
+    identifier: "button",
+    props: { destructive: ["true", "false"] },
     styles: s => ({
         a: `bg-${s("destructive", { true: "red", false: "green" })}-500`,
-        b: "",
+        b; ""
     }),
-    children: s => ({
-        icon: {
-            registration: iconRegistraton,
-            /* maps button sm -> icon lg, button md -> icon xl */
-            mapping: {
-                size: s("size", { sm: "lg", md: "xl" }),
-            },
-            /* Compile later generates the prop object for icon from this. */
-        },
-    }),
+    dependencies: {
+        icon: iconRegistration,
+    },
+    mappings: {
+        icon: { size: m => m("destructive", { true: "lg", false: "md" }) },
+    },
 });
 ```
+
+### Implementation strategy
+
+The implementation should happen in this order:
+
+-   [ ] Finish new registration
+-   [ ] Make compilation work of these registrations (Compile just runs for every breakpoint and then diffs the changes.)
+-   [ ] Implement new transforms (remove virtual imports)
+-   [ ]

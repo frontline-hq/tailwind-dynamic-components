@@ -1,5 +1,7 @@
 import baseX from "base-x";
 import { builders as b, namedTypes as n } from "ast-types";
+import merge from "lodash.merge";
+import mergeWith from "lodash.mergewith";
 
 type DReturn = (modifiers?: string | undefined) => n.LogicalExpression;
 
@@ -461,3 +463,232 @@ export function resolveProp<Dependencies>(
     });
     return [...new Set(mapped)].join(" ");
 }
+
+type RegistrationPropsKey = string | number | symbol;
+type RegistrationPropsValue = (string | number | symbol)[];
+type RegistrationProps = Record<RegistrationPropsKey, RegistrationPropsValue>;
+
+type RegistrationDependenciesKey = string | number | symbol;
+
+type RegistrationStylePropertyKey = string | number | symbol;
+type RegistrationStyleProperties = Record<RegistrationStylePropertyKey, string>;
+
+type RegistrationDependencies = Record<
+    RegistrationDependenciesKey,
+    Registration
+>;
+
+type RegistrationCompileParameters<Props extends RegistrationProps> = {
+    [P in keyof Props]:
+        | Props[P][number]
+        | { default: Props[P][number]; [twModifier: string]: Props[P][number] };
+};
+
+type RegistrationMappings<
+    Dependencies extends RegistrationDependencies,
+    Props extends RegistrationProps,
+> = {
+    [D in keyof Dependencies]: {
+        [DependencyPropsKey in keyof Dependencies[D]["props"]]: (
+            m: M<Props, Dependencies[D]["props"][DependencyPropsKey][number]>
+        ) => RegistrationCompileParameters<Props>[DependencyPropsKey];
+    };
+};
+
+type S<Props extends RegistrationProps> = <
+    const PropsKey extends keyof Props,
+    const PropsValue extends Props[PropsKey][number],
+>(
+    prop: PropsKey,
+    ...styles:
+        | [string, Partial<Record<PropsValue, string>>]
+        | [Record<PropsValue, string>]
+) => string;
+
+type M<
+    Props extends RegistrationProps,
+    Values extends string | number | symbol = string,
+> = <const PropsKey extends keyof Props>(
+    prop: PropsKey,
+    ...styles:
+        | [Values, Partial<Record<Props[PropsKey][number], Values>>]
+        | [Record<Props[PropsKey][number], Values>]
+) => RegistrationCompileParameters<Props>[PropsKey];
+
+/**
+ * Turns compile parameters to an object representing the variants we need to process:
+ * @example
+ * parametersToVariants({
+ *   destructive: true,
+ *   hierarchy: 'primary',
+ *   size: { default: 'sm', 'hover:md': 'md' }
+ * })
+ * // Returns
+ * {
+ *   default: {
+ *     destructive: true,
+ *     hierarchy: 'primary',
+ *     size: 'sm'
+ *   },
+ *   'hover:md': {
+ *     destructive: true,
+ *     hierarchy: 'primary',
+ *     size: 'md'
+ *   }
+ * }
+ */
+export function parametersToVariants<
+    const Props extends RegistrationProps,
+    const PropsKey extends keyof Props,
+    const PropsValue extends Props[PropsKey][number],
+    const VariantsValue extends Record<PropsKey, PropsValue>,
+    const CompileParameters extends RegistrationCompileParameters<Props>,
+>(parameters: CompileParameters) {
+    const variants: Record<string, VariantsValue> = {};
+    for (const k1 in parameters) {
+        if (Object.prototype.hasOwnProperty.call(parameters, k1)) {
+            const v1 = parameters[k1];
+            if (
+                typeof v1 === "string" ||
+                typeof v1 === "symbol" ||
+                typeof v1 === "number"
+            ) {
+                merge(variants, { default: { [k1]: v1 } });
+            } else {
+                for (const k2 in v1) {
+                    if (Object.prototype.hasOwnProperty.call(v1, k2)) {
+                        merge(variants, { [k2]: { [k1]: v1[k2] } });
+                    }
+                }
+            }
+        }
+    }
+    return Object.fromEntries(
+        Object.entries(variants).map(([k, v]) => {
+            return [k, merge({ ...variants["default"] }, v)];
+        })
+    ) as {
+        default: VariantsValue;
+        [twModifier: string]: VariantsValue;
+    };
+}
+
+export class Registration<
+    const Identifier extends string = string,
+    const Props extends RegistrationProps = RegistrationProps,
+    const StyleProperties extends
+        RegistrationStyleProperties = RegistrationStyleProperties,
+    const Dependencies extends
+        RegistrationDependencies = RegistrationDependencies,
+    const Mappings extends RegistrationMappings<
+        Dependencies,
+        Props
+    > = RegistrationMappings<Dependencies, Props>,
+    const CompileParameters extends
+        RegistrationCompileParameters<Props> = RegistrationCompileParameters<Props>,
+> {
+    identifier;
+    props;
+    styles;
+    dependencies;
+    mappings;
+    constructor({
+        identifier,
+        props,
+        styles,
+        dependencies,
+        mappings,
+    }: {
+        identifier: Identifier;
+        props: Props;
+        styles: (s: S<Props>) => StyleProperties;
+        dependencies: Dependencies;
+        mappings: Mappings;
+    }) {
+        this.identifier = identifier;
+        this.props = props;
+        this.styles = styles;
+        this.dependencies = dependencies;
+        this.mappings = mappings;
+    }
+
+    compile(parameters: CompileParameters) {
+        const variants = parametersToVariants(parameters);
+        // Generate compiled styles as object {default: {a: ["", "", ...], b: ...}, "hover:md": {a: ["", "", ...], b: ...}}
+        const step1 = Object.fromEntries(
+            Object.entries(variants).map(([k, v]) => [
+                k,
+                Object.fromEntries(
+                    Object.entries(
+                        this.styles((prop, ...styles) => {
+                            const i = v[prop];
+                            if (styles.length === 2)
+                                if (Object.hasOwn(styles[1], i))
+                                    return styles[1][i] as string;
+                                else return styles[0];
+                            return styles[0][i as keyof (typeof styles)[0]];
+                        })
+                    ).map(([k1, v1]) => [
+                        k1,
+                        v1.split(new RegExp(`[${whitespaceCharsRegex}]+`, "g")),
+                    ])
+                ),
+            ])
+        );
+        // Remove duplicate values from everything but default, then join styles again to string.
+        const step2 = Object.fromEntries(
+            Object.entries(step1).map(([k1, v1]) => [
+                k1,
+                Object.fromEntries(
+                    Object.entries(v1).map(([k2, v2]) => [
+                        k2,
+                        k1 === "default"
+                            ? v2
+                            : v2
+                                  .filter(
+                                      v => !step1["default"][k2].includes(v)
+                                  )
+                                  .map(v => k1 + ":" + v),
+                    ])
+                ),
+            ])
+        );
+        const result: Record<string, Array<string>> = {};
+        for (const key in step2) {
+            if (Object.prototype.hasOwnProperty.call(step2, key)) {
+                mergeWith(result, step2[key], (objVal, srcVal) =>
+                    Array.isArray(objVal) ? objVal.concat(srcVal) : undefined
+                );
+            }
+        }
+        return { styles: result };
+    }
+}
+
+const iconRegistration = new Registration({
+    identifier: "icon",
+    props: { size: ["md", "lg"], destructive: ["true", "false"] },
+    styles: () => ({
+        a: "",
+    }),
+    dependencies: {},
+    mappings: {},
+});
+
+const registration = new Registration({
+    identifier: "button",
+    props: { destructive: ["true", "false"] },
+    styles: s => ({
+        a: `bg-${s("destructive", { true: "red", false: "green" })}-500`,
+    }),
+    dependencies: {
+        icon: iconRegistration,
+    },
+    mappings: {
+        icon: {
+            size: m => m("destructive", { true: "lg", false: "md" }),
+            destructive: m =>
+                m("destructive", { true: "false", false: "true" }),
+        },
+    },
+});

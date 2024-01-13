@@ -1,5 +1,11 @@
 import { describe, expect, expectTypeOf, test } from "vitest";
-import { BaseStyles, CompoundStyles, Styles } from "./register";
+import {
+    BaseStyles,
+    CompoundStyles,
+    Registration,
+    Styles,
+    parametersToVariants,
+} from "./register";
 
 export const literals = [
     /* matches with variants */
@@ -481,6 +487,98 @@ describe("CompoundStyles", () => {
               c0is: BGBXXhXQzMECsCD
           };"
         `);
+    });
+});
+
+describe("parametersToVariants", () => {
+    test("Convert simple parameters", () => {
+        expect(
+            parametersToVariants({
+                destructive: "true",
+                hierarchy: "primary",
+                size: { default: "sm", "hover:md": "md" },
+            })
+        ).toEqual({
+            default: {
+                destructive: "true",
+                hierarchy: "primary",
+                size: "sm",
+            },
+            "hover:md": {
+                destructive: "true",
+                hierarchy: "primary",
+                size: "md",
+            },
+        });
+    });
+    test("Convert complex parameters", () => {
+        expect(
+            parametersToVariants({
+                destructive: "true",
+                hierarchy: { default: "primary", sm: "secondary" },
+                size: { default: "sm", "hover:md": "md" },
+            })
+        ).toEqual({
+            default: {
+                destructive: "true",
+                hierarchy: "primary",
+                size: "sm",
+            },
+            "hover:md": {
+                destructive: "true",
+                hierarchy: "primary",
+                size: "md",
+            },
+            sm: {
+                destructive: "true",
+                hierarchy: "secondary",
+                size: "sm",
+            },
+        });
+    });
+});
+
+describe("Register", () => {
+    test("Compile", () => {
+        const iconRegistration = new Registration({
+            identifier: "icon",
+            props: { size: ["xl", "2xl"] },
+            styles: () => ({
+                a: "",
+            }),
+            dependencies: {},
+            mappings: {},
+        });
+        const registration = new Registration({
+            identifier: "button",
+            props: { size: ["sm", "md"], destructive: ["true", "false"] },
+            styles: s => ({
+                a: `h-${s("size", {
+                    sm: "4",
+                    md: "8",
+                })} bg-${s("destructive", "red", { false: "green" })}-400`,
+                b: `w-${s("size", { sm: "12", md: "16" })}`,
+            }),
+            dependencies: {
+                icon: iconRegistration,
+            },
+            mappings: {
+                icon: {
+                    size: m => m("destructive", { true: "xl", false: "2xl" }),
+                },
+            },
+        });
+        expect(
+            registration.compile({
+                destructive: "true",
+                size: { default: "sm", "hover:md": "md" },
+            })
+        ).toEqual({
+            styles: {
+                a: ["h-4", "bg-red-400", "hover:md:h-8"],
+                b: ["w-12", "hover:md:w-16"],
+            },
+        });
     });
 });
 
