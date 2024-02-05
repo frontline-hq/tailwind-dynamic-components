@@ -452,22 +452,18 @@ describe("CompoundStyles", () => {
     });
     describe("unique description error", () => {
         test("addInline", () => {
-            try {
-                expect(
-                    new CompoundStyles("some-description").addInline(
-                        "some-description"
-                    )
-                ).toThrowError("Description has to be unique.");
-            } catch (error) {}
+            expect(() =>
+                new CompoundStyles("some-description").addInline(
+                    "some-description"
+                )
+            ).toThrowError("Description has to be unique.");
         });
         test("add", () => {
-            try {
-                expect(
-                    new CompoundStyles("some-description").add(
-                        new Styles("some-description")
-                    )
-                ).toThrowError("Description has to be unique.");
-            } catch (error) {}
+            expect(() =>
+                new CompoundStyles("some-description").add(
+                    new Styles("some-description")
+                )
+            ).toThrowError("Description has to be unique.");
         });
     });
     test("compile", async () => {
@@ -542,12 +538,17 @@ describe("Register", () => {
     test("Compile", () => {
         const iconRegistration = new Registration({
             identifier: "icon",
-            props: { size: ["xl", "2xl"] },
-            styles: () => ({
-                a: "",
+            props: { size: ["xl", "2xl"], destructive: ["true", "false"] },
+            styles: s => ({
+                c: `border-${s("size", { xl: "2", "2xl": "4" })} text-${s(
+                    "destructive",
+                    "red",
+                    { false: "green" }
+                )}-400`,
             }),
             dependencies: {},
             mappings: {},
+            importPath: "",
         });
         const registration = new Registration({
             identifier: "button",
@@ -564,9 +565,12 @@ describe("Register", () => {
             },
             mappings: {
                 icon: {
-                    size: m => m("destructive", { true: "xl", false: "2xl" }),
+                    destructive: m =>
+                        m("destructive", { true: true, false: false }),
+                    size: m => m("size", { md: "2xl", sm: "xl" }),
                 },
             },
+            importPath: "",
         });
         expect(
             registration.compile({
@@ -574,6 +578,14 @@ describe("Register", () => {
                 size: { default: "sm", "hover:md": "md" },
             })
         ).toEqual({
+            children: {
+                icon: {
+                    children: {},
+                    styles: {
+                        c: ["border-2", "text-red-400", "hover:md:border-4"],
+                    },
+                },
+            },
             styles: {
                 a: ["h-4", "bg-red-400", "hover:md:h-8"],
                 b: ["w-12", "hover:md:w-16"],

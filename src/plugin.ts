@@ -1,12 +1,19 @@
 import type { Plugin } from "vite";
-import { LibraryConfig, getTransformConfig } from "./config/config";
+import {
+    configFileName,
+    getLibraryConfig,
+    getTransformConfig,
+} from "./config/config";
 import { getFileInformation } from "./fileInformation";
 import { dedent } from "ts-dedent";
 import { libraryName, shortLibraryName } from "./library.config";
 import { transformCode } from "./transforms";
-import { newEmittedFiles } from "./transforms/inject";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
+import difference from "lodash.difference";
+import {
+    getGlobalSafelist,
+    reloadTailwind,
+    setGlobalSafelist,
+} from "./safelisting/safelisting";
 
 function printDebug(
     filePath: string,
@@ -32,65 +39,39 @@ function printDebug(
     `);
 }
 
-export function plugin(libraryConfig: LibraryConfig): Plugin {
-    const hiddenDirectoryPath = path.resolve(
-        process.cwd(),
-        `.${shortLibraryName}`
-    );
-    const emitted = newEmittedFiles();
+export async function plugin(): Promise<Plugin> {
+    const config = await getTransformConfig();
     return {
-        name: `vite-plugin-${libraryName}`,
+        name: `vite-plugin-${shortLibraryName}`,
         // makes sure we run before vite-plugin-svelte
         enforce: "pre",
-        async buildStart() {
-            // Make sure that the hidden library directory exists.
-            await mkdir(hiddenDirectoryPath, { recursive: true });
-            // Add a gitignore file in the directory
-            await writeFile(
-                path.resolve(hiddenDirectoryPath, ".gitignore"),
-                "*",
-                { encoding: "utf8" }
-            );
-        },
-        resolveId(id) {
-            if ([...emitted.values()].some(e => e.fileReference === id))
-                return "\0" + id;
-            return;
-        },
-        async load(id) {
-            //const configFilePath = await getLibraryConfigFilePath();
-            // Reload when config or registration files change
-            const config = await getTransformConfig(libraryConfig);
-            // Load the virtual imports (Our style definitions)
-            const found = [...emitted.entries()].find(([, e]) =>
-                id.includes(e.fileReference)
-            );
+        // Restart vite server when the library config changes ✅
+        // Check: does that also inlude dependencies of config file? ❌
+        // (credit to https://github.com/antfu/vite-plugin-restart)
+        async configureServer(server) {
+            server.watcher.add([`./${configFileName}`, "src/**/*.tdc.ts"]);
+            server.watcher.on("add", handleFileChange);
+            server.watcher.on("change", handleFileChange);
+            server.watcher.on("unlink", unlinkFile);
 
-            const { styles: resolved, fileReference } = found?.[1] ?? {};
-            if (!fileReference) return;
-            const fileInformation = getFileInformation(config, fileReference);
-            if (!fileInformation) return;
+            async function handleFileChange(path: string, stats: unknown) {
+                if (config.debug)
+                    console.log(
+                        `Config file ${configFileName} changed. Restarting server...`
+                    );
+                if (path.includes(configFileName) || path.endsWith(".tdc.ts")) {
+                    await server.restart();
+                    //await reloadTailwind(getLibraryConfig().tailwindConfigPath);
+                }
+            }
 
-            if (config.debug && resolved) {
-                printDebug(fileReference, fileInformation.type, {
-                    id: id,
-                    resolved: resolved,
-                    type: "load",
-                });
+            async function unlinkFile(path: string) {
+                await server.restart();
+                /* if (path.includes(configFileName))
+                    await reloadTailwind(getLibraryConfig().tailwindConfigPath); */
             }
-            // Also print content of virtual file into hidden library directory
-            if (found?.[0] && resolved) {
-                await writeFile(
-                    path.resolve(hiddenDirectoryPath, `./${found?.[0]}.js`),
-                    resolved,
-                    { encoding: "utf8" }
-                );
-            }
-            return resolved;
         },
         async transform(code, id) {
-            const config = await getTransformConfig(libraryConfig);
-
             const fileInformation = getFileInformation(config, id);
             if (!fileInformation) return null;
 
@@ -104,9 +85,18 @@ export function plugin(libraryConfig: LibraryConfig): Plugin {
             const transformedCode = await transformCode(
                 config,
                 code,
-                fileInformation,
-                emitted
+                fileInformation
             );
+            if (
+                transformedCode &&
+                difference(transformedCode.safelist, getGlobalSafelist() ?? [])
+                    .length > 0
+            ) {
+                setGlobalSafelist(transformedCode.safelist);
+                if (config.debug)
+                    console.log(`Safelist has changed. Restarting tailwind...`);
+                await reloadTailwind(getLibraryConfig().tailwindConfigPath);
+            }
             if (config.debug && transformedCode) {
                 printDebug(
                     id.replace(config.cwdFolderPath, ""),
@@ -118,7 +108,6 @@ export function plugin(libraryConfig: LibraryConfig): Plugin {
                     }
                 );
             }
-
             return transformedCode;
         },
     };

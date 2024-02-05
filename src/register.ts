@@ -36,7 +36,7 @@ function prependWithModifiers(s: string, modifiers?: string) {
 }
 
 export const variantDescriptionDelimiter = "_";
-const whitespaceCharsRegex = "\\t\\n\\r\\s";
+export const whitespaceCharsRegex = "\\t\\n\\r\\s";
 const twModifierRegex = `[^${whitespaceCharsRegex}:]+:`;
 const getVariantRegex = (variants: readonly string[], delimiter = true) => {
     const variantsRegex = variants.join("|");
@@ -473,10 +473,9 @@ type RegistrationDependenciesKey = string | number | symbol;
 type RegistrationStylePropertyKey = string | number | symbol;
 type RegistrationStyleProperties = Record<RegistrationStylePropertyKey, string>;
 
-type RegistrationDependencies = Record<
-    RegistrationDependenciesKey,
-    Registration
->;
+type RegistrationDependencies = {
+    [key: RegistrationDependenciesKey]: Registration;
+};
 
 type RegistrationCompileParameters<Props extends RegistrationProps> = {
     [P in keyof Props]:
@@ -490,8 +489,10 @@ type RegistrationMappings<
 > = {
     [D in keyof Dependencies]: {
         [DependencyPropsKey in keyof Dependencies[D]["props"]]: (
-            m: M<Props, Dependencies[D]["props"][DependencyPropsKey][number]>
-        ) => RegistrationCompileParameters<Props>[DependencyPropsKey];
+            m: M<Props, Dependencies[D]["props"], DependencyPropsKey>
+        ) => RegistrationCompileParameters<
+            Dependencies[D]["props"]
+        >[DependencyPropsKey];
     };
 };
 
@@ -505,15 +506,60 @@ type S<Props extends RegistrationProps> = <
         | [Record<PropsValue, string>]
 ) => string;
 
+// (PropsKey, {PropValue, DependencyPropValue})
+
 type M<
     Props extends RegistrationProps,
-    Values extends string | number | symbol = string,
-> = <const PropsKey extends keyof Props>(
+    DependencyProps extends RegistrationProps,
+    DependencyPropsKey extends keyof DependencyProps,
+> = <
+    const PropsKey extends keyof Props,
+    const PropsValue extends Props[PropsKey][number],
+    const DependencyPropValue extends
+        DependencyProps[DependencyPropsKey][number],
+>(
     prop: PropsKey,
     ...styles:
-        | [Values, Partial<Record<Props[PropsKey][number], Values>>]
-        | [Record<Props[PropsKey][number], Values>]
-) => RegistrationCompileParameters<Props>[PropsKey];
+        | [
+              DependencyPropValue,
+              Partial<Record<PropsValue, DependencyPropValue>>,
+          ]
+        | [Record<PropsValue, DependencyPropValue>]
+) => RegistrationCompileParameters<DependencyProps>[DependencyPropsKey];
+
+const getM = <
+    const Props extends RegistrationProps,
+    const DependencyProps extends RegistrationProps,
+    const DependencyPropsKey extends keyof DependencyProps,
+    const CompileParameters extends
+        RegistrationCompileParameters<Props> = RegistrationCompileParameters<Props>,
+>(
+    compileParameters: CompileParameters
+): M<Props, DependencyProps, DependencyPropsKey> => {
+    return (prop, ...styles) => {
+        const compileParameterValue = compileParameters[prop];
+        const fn = (index: string | number | symbol) =>
+            (
+                (styles[1] ?? styles[0]) as unknown as Record<
+                    string | number | symbol,
+                    string
+                >
+            )[index] ?? styles[0];
+        if (
+            typeof compileParameterValue === "string" ||
+            typeof compileParameterValue === "number" ||
+            typeof compileParameterValue === "symbol"
+        ) {
+            return fn(compileParameterValue);
+        }
+        return Object.fromEntries(
+            Object.entries(compileParameterValue).map(([k, v]) => [k, fn(v)])
+        ) as {
+            [twModifier: string]: DependencyProps[DependencyPropsKey][number];
+            default: DependencyProps[DependencyPropsKey][number];
+        };
+    };
+};
 
 /**
  * Turns compile parameters to an object representing the variants we need to process:
@@ -573,6 +619,71 @@ export function parametersToVariants<
     };
 }
 
+function mappingToCompileParameters<
+    const Props extends RegistrationProps,
+    const Dependencies extends RegistrationDependencies,
+    const Mappings extends RegistrationMappings<Dependencies, Props>,
+    const CompileParameters extends
+        RegistrationCompileParameters<Props> = RegistrationCompileParameters<Props>,
+>(
+    mappings: Mappings,
+    compileParameters: CompileParameters
+): {
+    [P in keyof Dependencies]: RegistrationCompileParameters<
+        Dependencies[P]["props"]
+    >;
+} {
+    const obj = {};
+    for (const dependencyKey in mappings) {
+        if (Object.prototype.hasOwnProperty.call(mappings, dependencyKey)) {
+            const dependencyMapping = mappings[dependencyKey];
+            for (const dependencyMappingKey in dependencyMapping) {
+                if (
+                    Object.prototype.hasOwnProperty.call(
+                        dependencyMapping,
+                        dependencyMappingKey
+                    )
+                ) {
+                    const dependencyMappingFunction =
+                        dependencyMapping[dependencyMappingKey];
+                    merge(obj, {
+                        [dependencyKey]: {
+                            [dependencyMappingKey]: dependencyMappingFunction(
+                                getM(compileParameters)
+                            ),
+                        },
+                    });
+                }
+            }
+        }
+    }
+    return obj as {
+        [DK in keyof Dependencies]: RegistrationCompileParameters<
+            Dependencies[DK]["props"]
+        >;
+    };
+}
+
+interface StyleCompileResult<
+    StyleProperties extends RegistrationStyleProperties,
+> {
+    styles: { [StylePropertyKey in keyof StyleProperties]: Array<string> };
+}
+
+export interface CompileResult<
+    StyleProperties extends
+        RegistrationStyleProperties = RegistrationStyleProperties,
+    Dependencies extends RegistrationDependencies = RegistrationDependencies,
+> {
+    styles: StyleCompileResult<StyleProperties>["styles"];
+    children: {
+        [DependencyKey in keyof Dependencies]: CompileResult<
+            ReturnType<Dependencies[DependencyKey]["styles"]>,
+            Dependencies[DependencyKey]["dependencies"]
+        >;
+    };
+}
+
 export class Registration<
     const Identifier extends string = string,
     const Props extends RegistrationProps = RegistrationProps,
@@ -592,30 +703,36 @@ export class Registration<
     styles;
     dependencies;
     mappings;
+    importPath;
     constructor({
         identifier,
         props,
         styles,
         dependencies,
         mappings,
+        importPath,
     }: {
         identifier: Identifier;
         props: Props;
         styles: (s: S<Props>) => StyleProperties;
         dependencies: Dependencies;
         mappings: Mappings;
+        importPath: string;
     }) {
         this.identifier = identifier;
         this.props = props;
         this.styles = styles;
         this.dependencies = dependencies;
         this.mappings = mappings;
+        this.importPath = importPath;
     }
 
-    compile(parameters: CompileParameters) {
+    compile(
+        parameters: CompileParameters
+    ): CompileResult<StyleProperties, Dependencies> {
         const variants = parametersToVariants(parameters);
         // Generate compiled styles as object {default: {a: ["", "", ...], b: ...}, "hover:md": {a: ["", "", ...], b: ...}}
-        const step1 = Object.fromEntries(
+        const stylesSortedByVariants = Object.fromEntries(
             Object.entries(variants).map(([k, v]) => [
                 k,
                 Object.fromEntries(
@@ -636,8 +753,8 @@ export class Registration<
             ])
         );
         // Remove duplicate values from everything but default, then join styles again to string.
-        const step2 = Object.fromEntries(
-            Object.entries(step1).map(([k1, v1]) => [
+        const stylesJoinedAndDeduped = Object.fromEntries(
+            Object.entries(stylesSortedByVariants).map(([k1, v1]) => [
                 k1,
                 Object.fromEntries(
                     Object.entries(v1).map(([k2, v2]) => [
@@ -646,49 +763,51 @@ export class Registration<
                             ? v2
                             : v2
                                   .filter(
-                                      v => !step1["default"][k2].includes(v)
+                                      v =>
+                                          !stylesSortedByVariants["default"][
+                                              k2
+                                          ].includes(v)
                                   )
                                   .map(v => k1 + ":" + v),
                     ])
                 ),
             ])
         );
-        const result: Record<string, Array<string>> = {};
-        for (const key in step2) {
-            if (Object.prototype.hasOwnProperty.call(step2, key)) {
-                mergeWith(result, step2[key], (objVal, srcVal) =>
-                    Array.isArray(objVal) ? objVal.concat(srcVal) : undefined
+        const styles: Record<string, Array<string>> = {};
+        for (const key in stylesJoinedAndDeduped) {
+            if (
+                Object.prototype.hasOwnProperty.call(
+                    stylesJoinedAndDeduped,
+                    key
+                )
+            ) {
+                mergeWith(
+                    styles,
+                    stylesJoinedAndDeduped[key],
+                    (objVal, srcVal) =>
+                        Array.isArray(objVal)
+                            ? objVal.concat(srcVal)
+                            : undefined
                 );
             }
         }
-        return { styles: result };
+        const children = Object.fromEntries(
+            Object.entries(this.dependencies).map(
+                ([dependencyKey, dependencyRegistration]) => [
+                    dependencyKey,
+                    dependencyRegistration.compile(
+                        mappingToCompileParameters(this.mappings, parameters)[
+                            dependencyKey
+                        ]
+                    ),
+                ]
+            )
+        );
+        return {
+            styles,
+            children,
+        } as CompileResult<StyleProperties, Dependencies>;
     }
 }
 
-const iconRegistration = new Registration({
-    identifier: "icon",
-    props: { size: ["md", "lg"], destructive: ["true", "false"] },
-    styles: () => ({
-        a: "",
-    }),
-    dependencies: {},
-    mappings: {},
-});
-
-const registration = new Registration({
-    identifier: "button",
-    props: { destructive: ["true", "false"] },
-    styles: s => ({
-        a: `bg-${s("destructive", { true: "red", false: "green" })}-500`,
-    }),
-    dependencies: {
-        icon: iconRegistration,
-    },
-    mappings: {
-        icon: {
-            size: m => m("destructive", { true: "lg", false: "md" }),
-            destructive: m =>
-                m("destructive", { true: "false", false: "true" }),
-        },
-    },
-});
+export type TdcProp<R extends Registration> = ReturnType<R["compile"]>;

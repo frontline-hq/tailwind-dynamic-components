@@ -1,12 +1,6 @@
 import { describe, test, expect } from "vitest";
 import { transformSvelte } from "./_.svelte";
-import { svelteTestCode01 } from "./inject.test";
-import { newEmittedFiles } from "./inject";
 import { getTransformConfig } from "../config/config";
-import { CompoundStyles, Styles } from "../register";
-import dedent from "ts-dedent";
-
-const emitted01 = newEmittedFiles();
 
 describe("process svelte", async () => {
     const result = await transformSvelte(
@@ -14,57 +8,35 @@ describe("process svelte", async () => {
             {
                 debug: false,
                 registrations: [
-                    new Styles("b0is", {
-                        dependencies: {
-                            color: ["blue", "gray"],
-                            heights: ["one", "two"],
-                        },
-                    }),
-                    new CompoundStyles("b0s", {}).addInline("b0as"),
+                    {
+                        identifier: "icon",
+                        compile: () => ({ result: "" }),
+                        importPath: "some-import-path",
+                        dependencies: {},
+                    },
                 ],
+                tagNameDelimiter: "-",
             },
             __dirname
         ),
-        svelteTestCode01,
-        emitted01
+        `
+<tdc-icon tdc={{some: "", obj: ""}}>
+    <div></div>
+</tdc-icon>
+`
     );
     test("simple transform", () => {
         expect(result.code).toMatchInlineSnapshot(`
-          "
-          <script>import FroHnY from \\"virtual:tdc-FroHnY\\";
-          import UvbZZuJVSa_ from \\"virtual:tdc-UvbZZuJVSa\\";
-          import DFutYsdTuNsmYdtaFQU from \\"virtual:tdc-DFutYsdTuNsmYdtaFQU\\";
-          import fNzbMeyhNLtAQkweV from \\"virtual:tdc-fNzbMeyhNLtAQkweV\\";
-          import FroGui from \\"virtual:tdc-FroGui\\";
-          import BFkFG from \\"virtual:tdc-BFkFG\\";
-
-              // Match
-              const a = FroHnY;
-              const b = UvbZZuJVSa_;
-              const c = DFutYsdTuNsmYdtaFQU;
-              const f = FroGui;
-              const g = BFkFG;
-              // identifier of md:b0is is reserved
-              const UvbZZuJVSa = \\"something\\";
-              // Do not match
-              const d = \`hover:md:\${a}\`;
-              </script>
-
-          <!-- Match -->
-          <Component some-prop={FroHnY}/>
-          <Component some-prop={UvbZZuJVSa_} />
-          <Component some-prop={DFutYsdTuNsmYdtaFQU} />
-          <Component some-prop={DFutYsdTuNsmYdtaFQU} />
-          <Component some-prop={DFutYsdTuNsmYdtaFQU} />
-          <Component some-prop={fNzbMeyhNLtAQkweV} />
-
-          <!-- Do not match -->
-          <Component some-prop=\\"ab0is\\" />
+          "<script>import {TdcIcon} from \\"some-import-path\\";
+          </script>
+          <TdcIcon tdc={{\\"result\\":\\"\\"}}>
+              <div></div>
+          </TdcIcon>
           "
         `);
     });
 
-    test("typescript", async () => {
+    /* test("typescript", async () => {
         const result = await transformSvelte(
             await getTransformConfig(
                 {
@@ -122,5 +94,5 @@ describe("process svelte", async () => {
           "<script>import MFfACiAdjryJq from \\"virtual:tdc-MFfACiAdjryJq\\";
           </script><div styles={MFfACiAdjryJq} />"
         `);
-    });
+    }); */
 });

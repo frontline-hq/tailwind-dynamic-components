@@ -43,9 +43,9 @@ I propose a markup bound solution that consists of two component types:
 
 ```svelte
 <script lang="ts">
-	import Component from '..'
+	import {Button} from '@frontline-hq/...' // We need a path resolver for each component
 </script>
-<Component
+<Button
 	tdc={/* Here comes the result from the registration process */}
 	disabled
 />
@@ -93,6 +93,24 @@ As only the most top level component is susceptible to detection and passes the 
 	disabled
 />
 ```
+
+**Nested injection cases**
+
+It might happen that a nested registration is desired to be injected:
+
+```svelte
+<tdc-button-icon
+	tdc={{
+		destructive: true,
+		hierarchy: 'primary',
+		size: { default: 'sm', 'hover:md': 'md' }
+	}}
+	disabled
+/>
+```
+
+The meaning of the above is, that we want the dependency `icon` of the registration with identifier `button` to be injected directly.
+The `tdc={}` props then have to be the props that this dependency requires.
 
 **Component construction**
 
@@ -165,7 +183,26 @@ const registration = new Registration({
 
 The implementation should happen in this order:
 
--   [ ] Finish new registration
--   [ ] Make compilation work of these registrations (Compile just runs for every breakpoint and then diffs the changes.)
--   [ ] Implement new transforms (remove virtual imports)
--   [ ]
+-   [x] Finish new registration
+-   [x] Make compilation work of these registrations (Compile just runs for every breakpoint and then diffs the changes.)
+-   [x] Implement new transforms (remove virtual imports)
+-   [ ] Add global type declarations for components
+-   [ ] Implement safelisting
+    -   [ ] Construct a function that returns the correct safelist -> Add that to postcss.
+    -   [ ]
+-   [ ] Think through possibility to rewrite registrations. E.g. `tdc-button-proxy` with `sm -> tdc-button:md` and `md -> tdc-button:lg` ?
+
+### TODO Notes
+
+Injection / What we need:
+
+1. Compile result dependent on context
+2. Imports to Add
+3. Markup to change
+    1. New markup (tag + changed attributes)
+    2. Positional information
+
+### Some new thoughts
+
+Why don't we use this library just as a generator for the styles that we want to generate?
+That would mean: We leave instructions for the components that we need. These components are then generated and can be used accordingly (and will be commited to git)

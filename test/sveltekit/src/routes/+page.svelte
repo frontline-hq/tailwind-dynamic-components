@@ -1,5 +1,6 @@
 <script>
-	import TestComponent from './TestComponent.svelte';
+	const blue = '';
 </script>
 
-<TestComponent styles={['sm_test01', 'md:md_test01']} />
+<!-- Disabled safelisting -->
+<tdc-icon tdc={{ size: 'xl', destructive: { default: true, md: false } }} />

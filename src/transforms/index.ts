@@ -1,26 +1,21 @@
 import type { TransformConfig } from "../config/config.js";
 import type { FileInformation } from "../fileInformation.js";
 import { libraryName } from "../library.config.js";
-import { transformJs } from "./_.js.js";
 import { transformSvelte } from "./_.svelte.js";
-import { newEmittedFiles } from "./inject.js";
 
 // TODO: throw errors if something is not supported and show a guide how to add the functionality manually
 
 export const transformCode = async (
     config: TransformConfig,
     code: string,
-    { type }: FileInformation,
-    emitted: ReturnType<typeof newEmittedFiles>
+    { type }: FileInformation
 ) => {
     if (!pluginOrderVerified && type.endsWith(".svelte"))
         assertCorrectPluginOrder(code);
 
     switch (type) {
-        case "*.js":
-            return await transformJs(config, code, emitted);
         case "*.svelte":
-            return await transformSvelte(config, code, emitted);
+            return await transformSvelte(config, code);
     }
     return;
 

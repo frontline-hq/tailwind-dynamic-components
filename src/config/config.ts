@@ -3,10 +3,16 @@ import { stat /* readFile */ } from "fs/promises";
 import { pathToFileURL } from "url";
 /* import { VERSION } from "@sveltejs/kit"; */
 import type { Config as SvelteConfig } from "@sveltejs/kit";
-import { libraryName } from "../library.config";
-import { CompoundStyles, Styles } from "../register";
+import { shortLibraryName } from "../library.config";
+import { Registration } from "../register";
+import j from "jiti";
+import { fileURLToPath } from "url";
 
-export const configFileName = `${libraryName}.config.js` as const;
+export const configFileName = `${shortLibraryName}.config.ts` as const;
+
+export function getConfigFilePath() {
+    return path.resolve(process.cwd(), `./${shortLibraryName}.config.ts`);
+}
 
 export async function findConfigFileFolder(directory: string = process.cwd()) {
     if (
@@ -25,7 +31,9 @@ export const doesPathExist = async (path: string) =>
 
 export type LibraryConfig = {
     debug: boolean;
-    registrations: Array<CompoundStyles | Styles>;
+    registrations: Array<Registration>;
+    tagNameDelimiter: string;
+    tailwindConfigPath: string;
 };
 
 export type TransformConfig = {
@@ -44,36 +52,50 @@ export type TransformConfig = {
     };
 };
 
-export function flattenAndCheckRegistrations(
-    registrations: Array<CompoundStyles | Styles>
-) {
-    // 1. Add all subregistrations of CompoundStyles
-    const completeRegistrations = registrations.flatMap((r, _, arr) => {
-        if (r instanceof CompoundStyles)
-            return [r, ...Object.values(r.styles)] as typeof arr;
-        return [r];
-    });
-
+export function checkRegistrations(registrations: Array<Registration>) {
+    registrations.forEach(
+        r =>
+            Object.values(r.dependencies).length > 0 &&
+            checkRegistrations(Object.values(r.dependencies))
+    );
     // 2. Check that there are no duplicate descriptions.
-    const duplicateRegistration = completeRegistrations
-        .map(r => r.description)
+    const duplicateRegistration = registrations
+        .map(r => r.identifier)
         .filter((item, index, array) => array.indexOf(item) !== index);
     if (duplicateRegistration.length > 0)
         throw new Error(
             `Found duplicate registration ${String(duplicateRegistration)}.`
         );
-    return completeRegistrations;
+    return;
+}
+
+// TODO: check: will this work?
+const jiti = j(
+    /*
+	Credits to https://flaviocopes.com/fix-dirname-not-defined-es-module-scope/
+	*/
+    fileURLToPath(import.meta.url),
+    { cache: true, requireCache: false }
+);
+
+export function getLibraryConfig() {
+    const configPath = getConfigFilePath();
+    // Will throw a descriptive error if file does not exits ✅
+    const libraryConfig = jiti(configPath).default as LibraryConfig | undefined;
+    // Check default export ✅
+    if (libraryConfig === undefined)
+        throw new Error(
+            `No default export found in ./${shortLibraryName}.config.ts`
+        );
+    return libraryConfig;
 }
 
 export async function getTransformConfig(
-    libraryConfig: LibraryConfig,
     cwdFolderPath = process.cwd()
 ): Promise<TransformConfig> {
+    const libraryConfig = getLibraryConfig();
     // Process registrations in libraryconfig.
-    const completeRegistrations = flattenAndCheckRegistrations(
-        libraryConfig.registrations
-    );
-    libraryConfig.registrations = completeRegistrations;
+    checkRegistrations(libraryConfig.registrations);
     // Svelte specific data
 
     let svelteKitConfigData: TransformConfig["svelteKit"];
