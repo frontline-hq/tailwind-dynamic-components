@@ -54,21 +54,18 @@ export async function plugin(): Promise<Plugin> {
             server.watcher.on("change", handleFileChange);
             server.watcher.on("unlink", unlinkFile);
 
-            async function handleFileChange(path: string, stats: unknown) {
+            async function handleFileChange(path: string) {
                 if (config.debug)
                     console.log(
                         `Config file ${configFileName} changed. Restarting server...`
                     );
                 if (path.includes(configFileName) || path.endsWith(".tdc.ts")) {
                     await server.restart();
-                    //await reloadTailwind(getLibraryConfig().tailwindConfigPath);
                 }
             }
 
-            async function unlinkFile(path: string) {
+            async function unlinkFile() {
                 await server.restart();
-                /* if (path.includes(configFileName))
-                    await reloadTailwind(getLibraryConfig().tailwindConfigPath); */
             }
         },
         async transform(code, id) {

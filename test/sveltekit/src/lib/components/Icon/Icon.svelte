@@ -7,9 +7,6 @@
 	}
 
 	export let tdc: $$Props['tdc'];
-
-	console.log($$props.blue);
 </script>
 
 <div class={tdc.styles.c.join(' ')}>Hey there</div>
-0

@@ -1,62 +1,21 @@
-import {
-    CompoundStyles,
-    Registration,
-    Styles,
-    variantDescriptionDelimiter,
-    whitespaceCharsRegex,
-} from "../register";
+import { Registration, whitespaceCharsRegex } from "../register";
 import uniq from "lodash.uniq";
 import { asyncWalk } from "estree-walker";
 import { Node, ObjectExpression } from "estree";
 import { shortLibraryName } from "../library.config";
 import { findDeclarableIdentifier } from "../ast/ast";
 import {
-    Ast,
     Attribute,
-    Text,
     Element,
     MustacheTag,
 } from "svelte/types/compiler/interfaces";
 import { parse } from "svelte/compiler";
-import { ASTNode, namedTypes as n } from "ast-types";
+import { ASTNode } from "ast-types";
 import MagicString from "magic-string";
 import { safelistFromCompiled } from "../safelisting/safelisting";
-import { getLibraryConfig } from "../config/config";
-
-export function newEmittedFiles() {
-    return new Map<string, Emitted>();
-}
-
-export type Emitted = {
-    styles: string;
-    fileReference: string;
-};
-export type EmittedFiles = ReturnType<typeof newEmittedFiles>;
-
-function templateLiteralValue(node: ASTNode) {
-    // We are looking for a template literal with 0 expressions and
-    if (
-        n.TemplateLiteral.check(node) &&
-        node.expressions.length === 0 &&
-        node.quasis.length === 1 &&
-        n.TemplateElement.check(node.quasis[0])
-    ) {
-        return {
-            start: (node as AcornNode<n.TemplateLiteral>).start,
-            end: (node as AcornNode<n.TemplateLiteral>).end,
-            value: node.quasis[0].value.raw,
-            type: "template" as const,
-        };
-    }
-    return undefined;
-}
 
 function nodeIsAttribute(node: ASTNode): node is Attribute {
     return node.type === "Attribute";
-}
-
-function nodeIsText(node: ASTNode): node is Text {
-    return node.type === "Text";
 }
 
 function nodeIsElement(node: ASTNode): node is Element {
@@ -71,55 +30,6 @@ function nodeIsObjectExpression(
     node: ASTNode
 ): node is ObjectExpression & { start: number; end: number } {
     return node.type === "ObjectExpression";
-}
-
-function attributeTextValue(node: ASTNode) {
-    if (nodeIsAttribute(node) && nodeIsText(node.value[0]))
-        return {
-            start: node.start,
-            end: node.end,
-            value: node.value[0].data,
-            type: "attribute" as const,
-            name: node.name,
-        };
-    return undefined;
-}
-
-type AcornNode<N extends ASTNode> = N & { start: number; end: number };
-
-type SearchResult = {
-    value: string;
-    start: number;
-    end: number;
-} & (
-    | {
-          type: "template" | "literal";
-      }
-    | {
-          type: "attribute";
-          name: string;
-      }
-);
-
-export function getFileName(identifier: string) {
-    return `virtual:${shortLibraryName}-${identifier}`;
-}
-
-async function runOnSearchResult(
-    node: ASTNode,
-    runOn: (searchResult: SearchResult) => Promise<void>
-) {
-    const element = n.Literal.check(node)
-        ? typeof node.value === "string"
-            ? {
-                  value: node.value,
-                  start: (node as AcornNode<n.Literal>).start,
-                  end: (node as AcornNode<n.Literal>).end,
-                  type: "literal" as const,
-              }
-            : undefined
-        : templateLiteralValue(node) ?? attributeTextValue(node);
-    if (element != undefined) await runOn(element);
 }
 
 export function findMatchingRegistrations(
@@ -142,8 +52,6 @@ export function findMatchingRegistrations(
         );
     }
 }
-
-const tagNameDelimiter = "-";
 
 /**
  * Converts a "global" component name to a new name and import path:
@@ -282,101 +190,6 @@ export async function analyze(
         elementsToReplace,
         safelist: uniq(safelist),
     };
-}
-
-/* code: the code of the page to inject into */
-/* registrations: the user provided registrations */
-/* emittedIdentifiers: the identifiers already processed and placed in the emitted file */
-export async function analyzeJsSvelte<AstType extends ASTNode | Ast>(
-    ast: AstType,
-    registrations: (Styles | CompoundStyles)[],
-    emittedFiles: EmittedFiles,
-    walker: typeof asyncWalk
-) {
-    // Imports to add
-    const importsToAdd = new Map<string, string>();
-    const elementsToReplace: ({
-        declarableIdentifier: string;
-    } & SearchResult)[] = [];
-
-    // Find and replace occurences of identifiers
-    await walker(ast as Node, {
-        async enter(node: ASTNode) {
-            // 1. Check whether it is the right node type
-            // 2. If yes, Check for a match
-
-            await runOnSearchResult(node, async literal => {
-                const matchingRegistration = registrations.find(r => {
-                    return r.matchDescription(literal.value);
-                });
-                // 3. If matching
-                if (matchingRegistration) {
-                    const identifier = matchingRegistration.getIdentifier(
-                        literal.value
-                    );
-                    const modifiers = matchingRegistration.matchModifiers(
-                        literal.value
-                    );
-                    const variant = matchingRegistration.matchVariant(
-                        literal.value
-                    );
-                    const declarableIdentifier = await findDeclarableIdentifier(
-                        ast,
-                        identifier,
-                        walker
-                    );
-                    const ref = getFileName(identifier);
-                    emittedFiles.set(identifier, {
-                        styles: await matchingRegistration.compile(
-                            identifier,
-                            getFileName
-                        ),
-                        fileReference: ref,
-                    });
-                    if (matchingRegistration instanceof CompoundStyles) {
-                        // Construct emittedFiles for each child of compoundStyles.
-                        await Promise.all(
-                            Object.values(matchingRegistration.styles).map(
-                                async s => {
-                                    const subIdentifier = s.getIdentifier(
-                                        `${
-                                            modifiers ?? ""
-                                        }${variant}${variantDescriptionDelimiter}${
-                                            s.description
-                                        }`
-                                    );
-                                    emittedFiles.set(subIdentifier, {
-                                        styles: await s.compile(subIdentifier),
-                                        fileReference:
-                                            getFileName(subIdentifier),
-                                    });
-                                }
-                            )
-                        );
-                    }
-                    // Replace with alternative import name
-                    // Replace literals: ""
-                    // Replace attribute: attribute= "value" or attribute= value
-                    elementsToReplace.push({
-                        declarableIdentifier,
-                        ...literal,
-                    });
-                    // Add to list of imports that we need to add to this file
-                    importsToAdd.set(declarableIdentifier, ref);
-                }
-            });
-        },
-    });
-    return {
-        elementsToReplace: elementsToReplace,
-        importsToAdd,
-        emittedFiles: emittedFiles,
-    };
-    // Create a list with code injections
-    // Emit a file with these code injections -> file reference
-    // file reference -> inject code into file
-    // Insert imports with identifiers
-    // Replace identifiers with imports
 }
 
 // 1. Analyze: Script & Html (needs walker (js or svelte), ast, registrations and emittedFiles list ):

@@ -1,1 +1,1 @@
-export { Styles, CompoundStyles, resolveProp } from "./register";
+export { Registration } from "./register";

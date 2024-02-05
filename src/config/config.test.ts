@@ -5,7 +5,7 @@ import { Registration } from "../register";
 const nakedRegistration = new Registration({
     identifier: "icon",
     props: {},
-    styles: s => ({}),
+    styles: () => ({}),
     dependencies: {},
     mappings: {},
     importPath: "",
