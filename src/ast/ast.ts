@@ -1,7 +1,7 @@
 import type { Node } from "estree";
 import type { asyncWalk } from "estree-walker";
 import { namedTypes as n, type ASTNode } from "ast-types";
-import { Ast } from "svelte/types/compiler/interfaces";
+import type { Ast } from "svelte/types/compiler/interfaces";
 
 // This function cannot error.
 export const findDeclarableIdentifier = async <AstType extends ASTNode | Ast>(

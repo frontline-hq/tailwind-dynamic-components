@@ -2,7 +2,6 @@
 import path from "path";
 import { defineConfig } from "vite";
 import packageJson from "./package.json";
-import nodePolyfills from "rollup-plugin-polyfill-node";
 import { libraryName } from "./src/library.config";
 
 const getPackageName = () => {
@@ -39,8 +38,6 @@ module.exports = defineConfig({
 				"path",
 				"fs/promises",
 				"url",
-                "base-x",
-                "recast",
                 "ts-dedent",
                 "ast-types",
                 "estree-walker",
@@ -48,20 +45,16 @@ module.exports = defineConfig({
                 "svelte",
 				"@sveltejs/kit",
 				"@sveltejs/vite-plugin-svelte",
-                "@babel/parser"
             ],
             output: {
                 globals: {
                     path: "require('path')",
                     "fs/promises": "require('fs/promises')",
                     url: "require('url')",
-                    "base-x": "require('base-x')",
-                    recast: "require('recast')",
                     "ts-dedent": "require('ts-dedent')",
                     "ast-types": "require('ast-types')",
                     "magic-string": "require('magic-string')",
                     "svelte/compiler": "require('svelte/compiler')",
-                    "@babel/parser": "require('@babel/parser')"
                 },
             },
             plugins: [],

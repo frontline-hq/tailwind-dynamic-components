@@ -5,12 +5,13 @@ import { Node, ObjectExpression } from "estree";
 import { shortLibraryName } from "../library.config";
 import { findDeclarableIdentifier } from "../ast/ast";
 import {
+    Ast,
     Attribute,
     Element,
     MustacheTag,
 } from "svelte/types/compiler/interfaces";
 import { parse } from "svelte/compiler";
-import { ASTNode } from "ast-types";
+import type { ASTNode } from "ast-types";
 import MagicString from "magic-string";
 import { safelistFromCompiled } from "../safelisting/safelisting";
 
@@ -94,7 +95,7 @@ export async function analyze(
     }> = [];
     const safelist: string[] = [];
 
-    const ast = parse(markup);
+    const ast: Ast = parse(markup);
 
     await asyncWalk(ast as unknown as Node, {
         async enter(node: ASTNode) {
@@ -191,14 +192,3 @@ export async function analyze(
         safelist: uniq(safelist),
     };
 }
-
-// 1. Analyze: Script & Html (needs walker (js or svelte), ast, registrations and emittedFiles list ):
-//		Find
-//		- used literals
-//		- declarable identifiers
-//		- needed imports
-// 2. Script:
-// 		- Add imports (using magicstring)
-//		- replace identifiers into script (using magicstring, needs list of searchStrings (printed from found nodes).)
-// 3. Html:
-//		- Replace identifiers into html (using magicstring, needs list of searchStrings (printed from found nodes).)
