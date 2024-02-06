@@ -1,7 +1,7 @@
 import { Registration } from '../../../../../../src/register';
 import { icon } from '../Icon/registration.tdc';
 
-const button = new Registration({
+export const button = new Registration({
 	identifier: 'button',
 	props: { scale: ['sm', 'md'], destructive: ['true', 'false'] },
 	styles: (s) => ({
@@ -20,5 +20,5 @@ const button = new Registration({
 			size: (m) => m('scale', { md: '2xl', sm: 'xl' })
 		}
 	},
-	importPath: ''
+	importPath: '$lib/components/button'
 });
