@@ -4,7 +4,7 @@ export const icon = new Registration({
 	identifier: 'icon',
 	props: { size: ['xl', '2xl'], destructive: ['true', 'false'] },
 	styles: (s) => ({
-		c: `border-${s('size', { xl: '8', '2xl': '4' })} text-${s('destructive', 'red', {
+		c: `border-${s('size', { xl: '2', '2xl': '4' })} text-${s('destructive', 'red', {
 			false: 'green'
 		})}-400`
 	}),

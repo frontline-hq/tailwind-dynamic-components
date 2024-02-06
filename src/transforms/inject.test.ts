@@ -89,15 +89,14 @@ describe("analyze", () => {
             },
             children: {},
         }),
-        importPath: "@frontline-hq/tailwind-dynamic-components/Icon",
+        importPath: "@frontline-hq/tdc/Icon",
     } as unknown as Registration;
     const mockedReg2 = {
         identifier: "button",
         dependencies: {
             icon: {
                 ...mockedReg1,
-                importPath:
-                    "@frontline-hq/tailwind-dynamic-components/Button/Icon",
+                importPath: "@frontline-hq/tdc/Button/Icon",
             },
         },
         compile: () => ({
@@ -111,7 +110,7 @@ describe("analyze", () => {
                 icon: mockedReg1.compile({}),
             },
         }),
-        importPath: "@frontline-hq/tailwind-dynamic-components/Button",
+        importPath: "@frontline-hq/tdc/Button",
     } as unknown as Registration;
     test("simple", async () => {
         const analysisResult = await analyze(
@@ -136,9 +135,7 @@ describe("analyze", () => {
           ]
         `);
         expect(analysisResult.importsToAdd).toEqual(
-            new Map([
-                ["TdcIcon", "@frontline-hq/tailwind-dynamic-components/Icon"],
-            ])
+            new Map([["TdcIcon", "@frontline-hq/tdc/Icon"]])
         );
         expect(analysisResult.safelist).toEqual(["", "a", "b"]);
     });
@@ -179,14 +176,8 @@ describe("analyze", () => {
         `);
         expect(analysisResult.importsToAdd).toEqual(
             new Map([
-                [
-                    "TdcButton",
-                    "@frontline-hq/tailwind-dynamic-components/Button",
-                ],
-                [
-                    "TdcButtonIcon",
-                    "@frontline-hq/tailwind-dynamic-components/Button/Icon",
-                ],
+                ["TdcButton", "@frontline-hq/tdc/Button"],
+                ["TdcButtonIcon", "@frontline-hq/tdc/Button/Icon"],
             ])
         );
         expect(analysisResult.safelist).toEqual(["", "c", "d", "a", "b"]);

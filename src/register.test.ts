@@ -53,7 +53,7 @@ describe("Register", () => {
     test("Compile", () => {
         const iconRegistration = new Registration({
             identifier: "icon",
-            props: { size: ["xl", "2xl"], destructive: ["true", "false"] },
+            props: { sizes: ["xl", "2xl"], destructive: ["true", "false"] },
             styles: s => ({
                 c: `border-${s("size", { xl: "2", "2xl": "4" })} text-${s(
                     "destructive",
