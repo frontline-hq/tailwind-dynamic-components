@@ -39,7 +39,7 @@ This is accomplished by offering a component design registration standard.
     });
     ```
 
-4.  Add plugin to tailwind config:
+4.  Add plugin & content configuration to tailwind config:
 
     ```ts
     // tailwind.config.ts
@@ -47,10 +47,17 @@ This is accomplished by offering a component design registration standard.
     import { dynamicSafelistPlugin } from "@frontline-hq/tdc";
 
     export default {
-        content: ["./src/**/*.{html,js,svelte,ts}"],
+        content: [
+            "./src/**/*.{html,js,svelte,ts}",
+            /* Exclude *.tdc.ts files from tailwind class detection */
+            "!**/*.tdc.ts",
+            /* Exclude tdc.config.ts file from tailwind class detection */
+            "!tdc.config.ts",
+        ],
         theme: {
             extend: {},
         },
+        /* Add the plugin here */
         plugins: [dynamicSafelistPlugin],
     } as Config;
     ```
