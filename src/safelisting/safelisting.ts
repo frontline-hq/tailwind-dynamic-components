@@ -1,5 +1,4 @@
 import { readFile, writeFile } from "node:fs/promises";
-import plugin from "tailwindcss/plugin";
 import { resolve } from "node:path";
 import { CompileResult } from "../register";
 

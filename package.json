@@ -68,7 +68,6 @@
         "lodash.uniq": "^4.5.0",
         "magic-string": "^0.30.5",
         "svelte": "^4.2.8",
-        "tailwindcss": "^3.4.1",
         "ts-dedent": "^2.2.0"
     }
 }
