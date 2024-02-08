@@ -2,7 +2,6 @@ import { readFile, writeFile } from "node:fs/promises";
 import plugin from "tailwindcss/plugin";
 import { resolve } from "node:path";
 import { CompileResult } from "../register";
-import { getLibraryConfig } from "../config/config";
 import dedent from "ts-dedent";
 
 export async function reloadTailwind(
