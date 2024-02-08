@@ -26,7 +26,7 @@ export function getDynamicSafelist({ debug }: { debug: boolean }) {
         console.log(`
 Retrieved dynamic tailwind config as:
 ${(safelist ?? []).map(s => `'${s}'`).join("\n")}`);
-    return safelist;
+    return safelist ?? [];
 }
 
 export function safelistFromCompiled(compiled: CompileResult): string[] {
