@@ -2,7 +2,6 @@ import { readFile, writeFile } from "node:fs/promises";
 import plugin from "tailwindcss/plugin";
 import { resolve } from "node:path";
 import { CompileResult } from "../register";
-import dedent from "ts-dedent";
 
 export async function reloadTailwind(
     configPath: string = "./tailwind.config.js"
@@ -22,16 +21,13 @@ export function setGlobalSafelist(safelist: string[]) {
     return safelist;
 }
 
-export function getDynamicSafelistPlugin({ debug }: { debug: boolean }) {
+export function getDynamicSafelist({ debug }: { debug: boolean }) {
     const safelist = getGlobalSafelist();
     if (debug)
-        console.log(dedent`
-            Retrieved dynamic tailwind config as:
-            ${safelist.map(s => `'${s}'`).join("\n")}
-        `);
-    return plugin(() => {}, {
-        safelist,
-    });
+        console.log(`
+Retrieved dynamic tailwind config as:
+${safelist.map(s => `'${s}'`).join("\n")}`);
+    return safelist;
 }
 
 export function safelistFromCompiled(compiled: CompileResult): string[] {

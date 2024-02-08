@@ -39,12 +39,12 @@ This is accomplished by offering a component design registration standard.
     });
     ```
 
-4.  Add plugin & content configuration to tailwind config:
+4.  Add safelit & content configuration to tailwind config:
 
     ```ts
     // tailwind.config.ts
     import type { Config } from "tailwindcss";
-    import { dynamicSafelistPlugin } from "@frontline-hq/tdc";
+    import { getDynamicSafelist } from "@frontline-hq/tdc";
 
     export default {
         content: [
@@ -57,8 +57,13 @@ This is accomplished by offering a component design registration standard.
         theme: {
             extend: {},
         },
-        /* Add the plugin here */
-        plugins: [dynamicSafelistPlugin],
+        /* Add the safelist here */
+        safelist: [
+            getDynamicSafelist({
+                /* optionally debug: boolean to debug safelist */
+            }),
+        ],
+        plugins: [],
     } as Config;
     ```
 
