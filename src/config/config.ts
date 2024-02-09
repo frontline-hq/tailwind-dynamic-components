@@ -68,12 +68,12 @@ export function checkRegistrations(registrations: Array<Registration>) {
     return;
 }
 
-export function getLibraryConfig(absoluteFilePath: string) {
+export function getLibraryConfig() {
     const jiti = j(
         /*
         Credits to https://flaviocopes.com/fix-dirname-not-defined-es-module-scope/
         */
-        absoluteFilePath,
+        process.cwd(),
         { cache: true, requireCache: false }
     );
     const configPath = getConfigFilePath();
@@ -90,7 +90,7 @@ export function getLibraryConfig(absoluteFilePath: string) {
 export async function getTransformConfig(
     cwdFolderPath = process.cwd()
 ): Promise<TransformConfig> {
-    const libraryConfig = getLibraryConfig(__filename);
+    const libraryConfig = getLibraryConfig();
     // Process registrations in libraryconfig.
     checkRegistrations(libraryConfig.registrations);
     // Svelte specific data

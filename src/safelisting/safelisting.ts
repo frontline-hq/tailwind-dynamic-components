@@ -98,7 +98,7 @@ export function getSafelistSvelte(
 }
 
 export async function reloadTailwind() {
-    const libraryConfig = getLibraryConfig(__dirname);
+    const libraryConfig = getLibraryConfig();
     const tailwindPath = path.resolve(
         process.cwd(),
         libraryConfig.tailwindConfigPath
@@ -154,7 +154,7 @@ export function getDynamicSafelist() {
         process.exit(0);
     });
     // Retrieve library config
-    const libraryConfig = getLibraryConfig(__dirname);
+    const libraryConfig = getLibraryConfig();
     // Look at .svelte files
 
     function readSafelistEntry(path: string) {
