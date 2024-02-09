@@ -4,7 +4,7 @@ import { pathToFileURL } from "url";
 /* import { VERSION } from "@sveltejs/kit"; */
 import type { Config as SvelteConfig } from "@sveltejs/kit";
 import { shortLibraryName } from "../library.config";
-import { Registration } from "../register";
+import type { Registration } from "../register";
 import j from "jiti";
 
 export const configFileName = `${shortLibraryName}.config.ts` as const;

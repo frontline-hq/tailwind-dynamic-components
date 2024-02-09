@@ -1,155 +1,26 @@
 import { Registration, whitespaceCharsRegex } from "../register";
 import uniq from "lodash.uniq";
-import { asyncWalk, walk } from "estree-walker";
-import { Node, ObjectExpression } from "estree";
+import { asyncWalk } from "estree-walker";
+import type { Node } from "estree";
 import { shortLibraryName } from "../library.config";
 import { findDeclarableIdentifier } from "../ast/ast";
-import {
+import type {
     Ast,
     Attribute,
-    Element,
     MustacheTag,
 } from "svelte/types/compiler/interfaces";
 import { parse } from "svelte/compiler";
 import type { ASTNode } from "ast-types";
 import MagicString from "magic-string";
 import { safelistFromCompiled } from "../safelisting/safelisting";
-import { transformSync } from "esbuild";
-
-function nodeIsAttribute(node: ASTNode): node is Attribute {
-    return node.type === "Attribute";
-}
-
-function nodeIsElement(node: ASTNode): node is Element {
-    return node.type === "Element";
-}
-
-function nodeIsMustacheTag(node: ASTNode): node is MustacheTag {
-    return node.type === "MustacheTag";
-}
-
-function nodeIsObjectExpression(
-    node: ASTNode
-): node is ObjectExpression & { start: number; end: number } {
-    return node.type === "ObjectExpression";
-}
-
-export function findMatchingRegistrations(
-    elementName: string,
-    registrations: Registration[],
-    tagNameDelimiter: string
-): Registration | void {
-    const exactMatch = registrations.find(r => r.identifier === elementName);
-    if (exactMatch) return exactMatch;
-    const partialMatch = registrations.find(r =>
-        elementName.startsWith(r.identifier + tagNameDelimiter)
-    );
-    if (partialMatch) {
-        return findMatchingRegistrations(
-            elementName.substring(
-                partialMatch.identifier.length + tagNameDelimiter.length
-            ),
-            Object.values(partialMatch.dependencies),
-            tagNameDelimiter
-        );
-    }
-}
-
-/**
- * Converts a "global" component name to a new name and import path:
- * @example
- * <tdc-button-icon />
- * // Gets converted to
- * {
- *   name: "TdcButtonIcon",
- *   importPath: "@frontline-hq/tailwind-dynamic-components"
- * }
- */
-export function resolveComponentName(name: string, tagNameDelimiter: string) {
-    const detectionRegex = new RegExp(
-        `(?<=^${shortLibraryName}${tagNameDelimiter})([a-zA-Z]+${tagNameDelimiter})*[a-zA-Z]+$`,
-        "g"
-    );
-    const match = name.match(detectionRegex);
-    if (match)
-        return (
-            "Tdc" +
-            match[0]
-                .split(tagNameDelimiter)
-                .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                .join("")
-        );
-    return;
-}
-
-function transpileSvelte(code: string) {
-    const regex = /(?<=<script[^>]*>)[\S\s]*(?=<\/script[^>]*>)/g;
-    return code.replaceAll(
-        regex,
-        match => transformSync(match, { loader: "ts" }).code
-    );
-}
-
-export function getSafelistSvelte(
-    markup: string,
-    registrations: Registration[],
-    tagNameDelimiter: string
-) {
-    const transpiled = transpileSvelte(markup);
-    const ast: Ast = parse(transpiled);
-    const safelist: string[] = [];
-    walk(ast as unknown as Node, {
-        enter(node: ASTNode) {
-            if (nodeIsElement(node)) {
-                const componentName = resolveComponentName(
-                    node.name,
-                    tagNameDelimiter
-                );
-                if (componentName !== undefined) {
-                    const matchingRegistration = findMatchingRegistrations(
-                        node.name.substring(
-                            shortLibraryName.length + tagNameDelimiter.length
-                        ),
-                        /* getLibraryConfig(). */ registrations,
-                        tagNameDelimiter
-                    );
-                    if (matchingRegistration) {
-                        // Find the library attribute object expression
-                        const libraryAttributeExpression = (
-                            (
-                                node.attributes.find(
-                                    a =>
-                                        nodeIsAttribute(a) &&
-                                        a.name === shortLibraryName
-                                ) as Attribute | undefined
-                            )?.value.find(v => nodeIsMustacheTag(v)) as
-                                | MustacheTag
-                                | undefined
-                        )?.expression;
-                        if (
-                            libraryAttributeExpression &&
-                            nodeIsObjectExpression(libraryAttributeExpression)
-                        ) {
-                            // extract the library attribute object expression string
-                            const evalString = transpiled.slice(
-                                libraryAttributeExpression.start,
-                                libraryAttributeExpression.end
-                            );
-                            // compile with found props
-                            const evalResult = (0, eval)(
-                                "(" + evalString + ")"
-                            );
-                            const compiled =
-                                matchingRegistration.compile(evalResult);
-                            safelist.push(...safelistFromCompiled(compiled));
-                        }
-                    }
-                }
-            }
-        },
-    });
-    return safelist;
-}
+import {
+    findMatchingRegistrations,
+    nodeIsAttribute,
+    nodeIsElement,
+    nodeIsMustacheTag,
+    nodeIsObjectExpression,
+    resolveComponentName,
+} from "../utils";
 
 export async function analyze(
     markup: string,
