@@ -1,7 +1,7 @@
 {
     "name": "@frontline-hq/tdc",
     "private": false,
-    "version": "0.0.15",
+    "version": "0.0.16",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
     "files": [
