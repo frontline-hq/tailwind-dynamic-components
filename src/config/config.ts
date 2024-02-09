@@ -6,7 +6,6 @@ import type { Config as SvelteConfig } from "@sveltejs/kit";
 import { shortLibraryName } from "../library.config";
 import { Registration } from "../register";
 import j from "jiti";
-import { fileURLToPath } from "url";
 
 export const configFileName = `${shortLibraryName}.config.ts` as const;
 
@@ -69,16 +68,14 @@ export function checkRegistrations(registrations: Array<Registration>) {
     return;
 }
 
-// TODO: check: will this work?
-const jiti = j(
-    /*
-	Credits to https://flaviocopes.com/fix-dirname-not-defined-es-module-scope/
-	*/
-    fileURLToPath(import.meta.url),
-    { cache: true, requireCache: false }
-);
-
-export function getLibraryConfig() {
+export function getLibraryConfig(absoluteFilePath: string) {
+    const jiti = j(
+        /*
+        Credits to https://flaviocopes.com/fix-dirname-not-defined-es-module-scope/
+        */
+        absoluteFilePath,
+        { cache: true, requireCache: false }
+    );
     const configPath = getConfigFilePath();
     // Will throw a descriptive error if file does not exits ✅
     const libraryConfig = jiti(configPath).default as LibraryConfig | undefined;
@@ -93,7 +90,7 @@ export function getLibraryConfig() {
 export async function getTransformConfig(
     cwdFolderPath = process.cwd()
 ): Promise<TransformConfig> {
-    const libraryConfig = getLibraryConfig();
+    const libraryConfig = getLibraryConfig(__filename);
     // Process registrations in libraryconfig.
     checkRegistrations(libraryConfig.registrations);
     // Svelte specific data

@@ -1,19 +1,9 @@
 import type { Plugin } from "vite";
-import {
-    configFileName,
-    getLibraryConfig,
-    getTransformConfig,
-} from "./config/config";
+import { configFileName, getTransformConfig } from "./config/config";
 import { getFileInformation } from "./fileInformation";
 import { dedent } from "ts-dedent";
 import { libraryName, shortLibraryName } from "./library.config";
 import { transformCode } from "./transforms";
-import difference from "lodash.difference";
-import {
-    getGlobalSafelist,
-    reloadTailwind,
-    setGlobalSafelist,
-} from "./safelisting/safelisting";
 
 function printDebug(
     filePath: string,
@@ -84,16 +74,6 @@ export async function plugin(): Promise<Plugin> {
                 code,
                 fileInformation
             );
-            if (
-                transformedCode &&
-                difference(transformedCode.safelist, getGlobalSafelist() ?? [])
-                    .length > 0
-            ) {
-                setGlobalSafelist(transformedCode.safelist);
-                if (config.debug)
-                    console.log(`Safelist has changed. Restarting tailwind...`);
-                await reloadTailwind(getLibraryConfig().tailwindConfigPath);
-            }
             if (config.debug && transformedCode) {
                 printDebug(
                     id.replace(config.cwdFolderPath, ""),

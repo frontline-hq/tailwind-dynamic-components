@@ -1,6 +1,6 @@
 import { Registration, whitespaceCharsRegex } from "../register";
 import uniq from "lodash.uniq";
-import { asyncWalk } from "estree-walker";
+import { asyncWalk, walk } from "estree-walker";
 import { Node, ObjectExpression } from "estree";
 import { shortLibraryName } from "../library.config";
 import { findDeclarableIdentifier } from "../ast/ast";
@@ -14,6 +14,7 @@ import { parse } from "svelte/compiler";
 import type { ASTNode } from "ast-types";
 import MagicString from "magic-string";
 import { safelistFromCompiled } from "../safelisting/safelisting";
+import { transformSync } from "esbuild";
 
 function nodeIsAttribute(node: ASTNode): node is Attribute {
     return node.type === "Attribute";
@@ -79,6 +80,75 @@ export function resolveComponentName(name: string, tagNameDelimiter: string) {
                 .join("")
         );
     return;
+}
+
+function transpileSvelte(code: string) {
+    const regex = /(?<=<script[^>]*>)[\S\s]*(?=<\/script[^>]*>)/g;
+    return code.replaceAll(
+        regex,
+        match => transformSync(match, { loader: "ts" }).code
+    );
+}
+
+export function getSafelistSvelte(
+    markup: string,
+    registrations: Registration[],
+    tagNameDelimiter: string
+) {
+    const transpiled = transpileSvelte(markup);
+    const ast: Ast = parse(transpiled);
+    const safelist: string[] = [];
+    walk(ast as unknown as Node, {
+        enter(node: ASTNode) {
+            if (nodeIsElement(node)) {
+                const componentName = resolveComponentName(
+                    node.name,
+                    tagNameDelimiter
+                );
+                if (componentName !== undefined) {
+                    const matchingRegistration = findMatchingRegistrations(
+                        node.name.substring(
+                            shortLibraryName.length + tagNameDelimiter.length
+                        ),
+                        /* getLibraryConfig(). */ registrations,
+                        tagNameDelimiter
+                    );
+                    if (matchingRegistration) {
+                        // Find the library attribute object expression
+                        const libraryAttributeExpression = (
+                            (
+                                node.attributes.find(
+                                    a =>
+                                        nodeIsAttribute(a) &&
+                                        a.name === shortLibraryName
+                                ) as Attribute | undefined
+                            )?.value.find(v => nodeIsMustacheTag(v)) as
+                                | MustacheTag
+                                | undefined
+                        )?.expression;
+                        if (
+                            libraryAttributeExpression &&
+                            nodeIsObjectExpression(libraryAttributeExpression)
+                        ) {
+                            // extract the library attribute object expression string
+                            const evalString = transpiled.slice(
+                                libraryAttributeExpression.start,
+                                libraryAttributeExpression.end
+                            );
+                            // compile with found props
+                            const evalResult = (0, eval)(
+                                "(" + evalString + ")"
+                            );
+                            const compiled =
+                                matchingRegistration.compile(evalResult);
+                            safelist.push(...safelistFromCompiled(compiled));
+                        }
+                    }
+                }
+            }
+        },
+    });
+    return safelist;
 }
 
 export async function analyze(

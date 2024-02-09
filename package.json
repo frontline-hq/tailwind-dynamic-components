@@ -2,6 +2,7 @@
     "name": "@frontline-hq/tdc",
     "private": false,
     "version": "0.0.14",
+    "type": "module",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
     "files": [
@@ -57,10 +58,13 @@
         "vitest": "^0.34.6"
     },
     "dependencies": {
+        "@parcel/watcher": "^2.4.0",
         "@sveltejs/kit": "^1.30.3",
         "@sveltejs/vite-plugin-svelte": "^3.0.1",
         "ast-types": "^0.14.2",
+        "esbuild": "^0.20.0",
         "estree-walker": "^3.0.3",
+        "fast-glob": "^3.3.2",
         "jiti": "^1.21.0",
         "lodash.difference": "^4.5.0",
         "lodash.merge": "^4.6.2",
