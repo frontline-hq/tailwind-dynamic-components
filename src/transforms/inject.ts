@@ -1,85 +1,26 @@
 import { Registration, whitespaceCharsRegex } from "../register";
 import uniq from "lodash.uniq";
 import { asyncWalk } from "estree-walker";
-import { Node, ObjectExpression } from "estree";
+import type { Node } from "estree";
 import { shortLibraryName } from "../library.config";
 import { findDeclarableIdentifier } from "../ast/ast";
-import {
+import type {
     Ast,
     Attribute,
-    Element,
     MustacheTag,
 } from "svelte/types/compiler/interfaces";
 import { parse } from "svelte/compiler";
 import type { ASTNode } from "ast-types";
 import MagicString from "magic-string";
 import { safelistFromCompiled } from "../safelisting/safelisting";
-
-function nodeIsAttribute(node: ASTNode): node is Attribute {
-    return node.type === "Attribute";
-}
-
-function nodeIsElement(node: ASTNode): node is Element {
-    return node.type === "Element";
-}
-
-function nodeIsMustacheTag(node: ASTNode): node is MustacheTag {
-    return node.type === "MustacheTag";
-}
-
-function nodeIsObjectExpression(
-    node: ASTNode
-): node is ObjectExpression & { start: number; end: number } {
-    return node.type === "ObjectExpression";
-}
-
-export function findMatchingRegistrations(
-    elementName: string,
-    registrations: Registration[],
-    tagNameDelimiter: string
-): Registration | void {
-    const exactMatch = registrations.find(r => r.identifier === elementName);
-    if (exactMatch) return exactMatch;
-    const partialMatch = registrations.find(r =>
-        elementName.startsWith(r.identifier + tagNameDelimiter)
-    );
-    if (partialMatch) {
-        return findMatchingRegistrations(
-            elementName.substring(
-                partialMatch.identifier.length + tagNameDelimiter.length
-            ),
-            Object.values(partialMatch.dependencies),
-            tagNameDelimiter
-        );
-    }
-}
-
-/**
- * Converts a "global" component name to a new name and import path:
- * @example
- * <tdc-button-icon />
- * // Gets converted to
- * {
- *   name: "TdcButtonIcon",
- *   importPath: "@frontline-hq/tailwind-dynamic-components"
- * }
- */
-export function resolveComponentName(name: string, tagNameDelimiter: string) {
-    const detectionRegex = new RegExp(
-        `(?<=^${shortLibraryName}${tagNameDelimiter})([a-zA-Z]+${tagNameDelimiter})*[a-zA-Z]+$`,
-        "g"
-    );
-    const match = name.match(detectionRegex);
-    if (match)
-        return (
-            "Tdc" +
-            match[0]
-                .split(tagNameDelimiter)
-                .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                .join("")
-        );
-    return;
-}
+import {
+    findMatchingRegistrations,
+    nodeIsAttribute,
+    nodeIsElement,
+    nodeIsMustacheTag,
+    nodeIsObjectExpression,
+    resolveComponentName,
+} from "../utils";
 
 export async function analyze(
     markup: string,

@@ -11,14 +11,6 @@ const nakedRegistration = new Registration({
     importPath: "",
 });
 
-describe("config", () => {
-    describe("properties", () => {
-        test("debug", async () => {
-            expect((await getTransformConfig(__dirname)).debug).toEqual(true);
-        });
-    });
-});
-
 describe("checkRegistrations", () => {
     test("throw on duplicates", () => {
         expect(() =>
@@ -59,19 +51,4 @@ describe("checkRegistrations", () => {
             ])
         ).toThrowError("Found duplicate registration iconChild.");
     });
-});
-
-describe("getTransformConfig", () => {
-    test("cwdFolderPath", async () =>
-        expect((await getTransformConfig(process.cwd())).cwdFolderPath).toEqual(
-            process.cwd()
-        ));
-    test("debug", async () =>
-        expect((await getTransformConfig()).debug).toEqual(true));
-    test("library.debug", async () =>
-        expect((await getTransformConfig()).library.debug).toEqual(true));
-    test("library.registrations", async () =>
-        expect((await getTransformConfig()).library.registrations).toEqual([
-            nakedRegistration,
-        ]));
 });

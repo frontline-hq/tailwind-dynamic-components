@@ -7,5 +7,5 @@ export default {
 		extend: {}
 	},
 	plugins: [],
-	safelist: [...getDynamicSafelist({ debug: true })]
+	safelist: [...getDynamicSafelist()]
 } as Config;
