@@ -28,7 +28,7 @@ module.exports = defineConfig({
     build: {
         ssr: true,
         lib: {
-            entry: [path.resolve(__dirname, "src/index.ts"), path.resolve(__dirname, "src/plugin.ts")],
+            entry: [path.resolve(__dirname, "src/index.ts"), path.resolve(__dirname, "src/plugin.ts"), path.resolve(__dirname, "src/tailwind.ts")],
             name: libraryName,
             formats,
             fileName: (format, entryName) => fileName[format](entryName),

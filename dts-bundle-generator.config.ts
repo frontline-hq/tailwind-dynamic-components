@@ -17,6 +17,11 @@ const config = {
             outFile: `./dist/plugin.d.ts`,
             noCheck: false,
         },
+        {
+            filePath: "./src/tailwind.ts",
+            outFile: `./dist/tailwind.d.ts`,
+            noCheck: false,
+        },
     ],
 };
 

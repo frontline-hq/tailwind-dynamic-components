@@ -1,7 +1,7 @@
 {
     "name": "@frontline-hq/tdc",
     "private": false,
-    "version": "0.0.17",
+    "version": "0.0.18",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
     "files": [
@@ -17,6 +17,11 @@
             "require": "./dist/plugin.js",
             "import": "./dist/plugin.mjs",
             "types": "./dist/plugin.d.ts"
+        },
+        "./tailwind": {
+            "require": "./dist/tailwind.js",
+            "import": "./dist/tailwind.mjs",
+            "types": "./dist/tailwind.d.ts"
         }
     },
     "types": "./dist/index.d.ts",
