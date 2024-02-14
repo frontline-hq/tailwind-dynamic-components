@@ -1,5 +1,4 @@
 import { Registration, whitespaceCharsRegex } from "../register";
-import uniq from "lodash.uniq";
 import { asyncWalk } from "estree-walker";
 import type { Node } from "estree";
 import { shortLibraryName } from "../library.config";
@@ -12,7 +11,6 @@ import type {
 import { parse } from "svelte/compiler";
 import type { ASTNode } from "ast-types";
 import MagicString from "magic-string";
-import { safelistFromCompiled } from "../safelisting/safelisting";
 import {
     findMatchingRegistrations,
     nodeIsAttribute,
@@ -21,6 +19,7 @@ import {
     nodeIsObjectExpression,
     resolveComponentName,
 } from "../utils";
+import { getConfigFilePath } from "../config/config";
 
 export async function analyze(
     markup: string,
@@ -34,7 +33,6 @@ export async function analyze(
         end: number;
         transformed: string;
     }> = [];
-    const safelist: string[] = [];
 
     const ast: Ast = parse(markup);
 
@@ -46,14 +44,16 @@ export async function analyze(
                     tagNameDelimiter
                 );
                 if (componentName !== undefined) {
-                    const matchingRegistration = findMatchingRegistrations(
-                        node.name.substring(
-                            shortLibraryName.length + tagNameDelimiter.length
-                        ),
-                        /* getLibraryConfig(). */ registrations,
-                        tagNameDelimiter
-                    );
-                    if (matchingRegistration) {
+                    const { registration: matchingRegistration, path } =
+                        findMatchingRegistrations(
+                            node.name.substring(
+                                shortLibraryName.length +
+                                    tagNameDelimiter.length
+                            ),
+                            /* getLibraryConfig(). */ registrations,
+                            tagNameDelimiter
+                        ) ?? {};
+                    if (matchingRegistration && path) {
                         // find declarable identifier:
                         const declarableComponentName =
                             await findDeclarableIdentifier(
@@ -86,23 +86,45 @@ export async function analyze(
                                 libraryAttributeExpression.start,
                                 libraryAttributeExpression.end
                             );
-                            // compile with found props
-                            const evalResult = (0, eval)(
-                                "(" + evalString + ")"
-                            );
-                            const compiled =
-                                matchingRegistration.compile(evalResult);
-                            safelist.push(...safelistFromCompiled(compiled));
                             // The string of the whole component in the markup: "<tdc-button tdc={{}}>...</tdc-button>"
                             const s = new MagicString(
                                 markup.slice(node.start, node.end)
                             );
+                            let tdcReplacement;
+                            try {
+                                // compile with found props
+                                const evalResult = (0, eval)(
+                                    "(" + evalString + ")"
+                                );
+                                tdcReplacement = JSON.stringify(
+                                    matchingRegistration.compile(evalResult)
+                                );
+                            } catch (error) {
+                                // eval fails
+                                // Add config file to imports
+                                const configImportName = `${shortLibraryName}Config`;
+                                const declarableConfigName =
+                                    await findDeclarableIdentifier(
+                                        ast,
+                                        configImportName,
+                                        asyncWalk
+                                    );
+                                importsToAdd.set(
+                                    `default as ${declarableConfigName}`,
+                                    getConfigFilePath()
+                                );
+                                // Inject runtime compile.
+                                tdcReplacement = `${declarableConfigName}.registrations${path.map(
+                                    p => `["${String(p)}"]`
+                                )}.compile(${evalString}, "${evalString}")`;
+                            }
                             // Replace compiled result
                             s.update(
                                 libraryAttributeExpression.start - node.start,
                                 libraryAttributeExpression.end - node.end,
-                                JSON.stringify(compiled)
+                                tdcReplacement
                             );
+
                             // Replace component opening tag
                             s.replace(
                                 new RegExp(`^<${node.name}`, "g"),
@@ -130,6 +152,5 @@ export async function analyze(
         ast,
         importsToAdd,
         elementsToReplace,
-        safelist: uniq(safelist),
     };
 }

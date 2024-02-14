@@ -55,7 +55,7 @@ describe("Register", () => {
             identifier: "icon",
             props: { sizes: ["xl", "2xl"], destructive: ["true", "false"] },
             styles: s => ({
-                c: `border-${s("size", { xl: "2", "2xl": "4" })} text-${s(
+                c: `border-${s("sizes", { xl: "2", "2xl": "4" })} text-${s(
                     "destructive",
                     "red",
                     { false: "green" }
@@ -82,7 +82,7 @@ describe("Register", () => {
                 icon: {
                     destructive: m =>
                         m("destructive", { true: true, false: false }),
-                    size: m => m("size", { md: "2xl", sm: "xl" }),
+                    sizes: m => m("size", { md: "2xl", sm: "xl" }),
                 },
             },
             importPath: "",
@@ -106,6 +106,32 @@ describe("Register", () => {
                 b: ["w-12", "hover:md:w-16"],
             },
         });
+    });
+    test("CompileAll", () => {
+        const iconRegistration = new Registration({
+            identifier: "icon",
+            props: { sizes: ["xl", "2xl"], destructive: ["true", "false"] },
+            styles: s => ({
+                c: `border-${s("sizes", { xl: "2", "2xl": "4" })} text-${s(
+                    "destructive",
+                    "red",
+                    { false: "green" }
+                )}-400`,
+            }),
+            dependencies: {},
+            mappings: {},
+            importPath: "",
+        });
+        expect(
+            iconRegistration.compileAll('{sizes: "xl", destructive: "true"}')
+        ).toEqual([
+            {
+                children: {},
+                styles: {
+                    c: ["border-2", "text-red-400"],
+                },
+            },
+        ]);
     });
 });
 
