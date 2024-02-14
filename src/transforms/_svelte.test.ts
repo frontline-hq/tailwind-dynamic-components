@@ -9,7 +9,8 @@ describe("process svelte", async () => {
 <tdc-icon tdc={{some: "", obj: ""}}>
     <div></div>
 </tdc-icon>
-`
+`,
+        "./some-file-path.svelte"
     );
     test("simple transform", () => {
         expect(result.code).toMatchInlineSnapshot(`

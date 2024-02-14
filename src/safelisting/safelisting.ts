@@ -18,11 +18,14 @@ import type {
 } from "svelte/types/compiler/interfaces";
 import {
     findMatchingRegistrations,
+    getGlobalSafelist,
+    getGlobalSafelistValue,
     nodeIsAttribute,
     nodeIsElement,
     nodeIsMustacheTag,
     nodeIsObjectExpression,
     resolveComponentName,
+    setGlobalSafelist,
 } from "../utils";
 import type { ASTNode } from "ast-types";
 import type { Node } from "estree";
@@ -34,6 +37,17 @@ function transpileSvelte(code: string) {
         regex,
         match => transformSync(match, { loader: "ts" }).code
     );
+}
+
+function evaluateProps(evalString: string, registration: Registration) {
+    try {
+        const evalResult = (0, eval)("(" + evalString + ")");
+        return registration.compile(evalResult);
+    } catch (_) {
+        // If eval fails, then that means there are undefined properties.
+        // Generate safelist for all possible combinations.
+        return registration.compileAll(evalString);
+    }
 }
 
 export function getSafelistSvelte(
@@ -52,13 +66,15 @@ export function getSafelistSvelte(
                     tagNameDelimiter
                 );
                 if (componentName !== undefined) {
-                    const matchingRegistration = findMatchingRegistrations(
-                        node.name.substring(
-                            shortLibraryName.length + tagNameDelimiter.length
-                        ),
-                        /* getLibraryConfig(). */ registrations,
-                        tagNameDelimiter
-                    );
+                    const { registration: matchingRegistration } =
+                        findMatchingRegistrations(
+                            node.name.substring(
+                                shortLibraryName.length +
+                                    tagNameDelimiter.length
+                            ),
+                            /* getLibraryConfig(). */ registrations,
+                            tagNameDelimiter
+                        ) ?? {};
                     if (matchingRegistration) {
                         // Find the library attribute object expression
                         const libraryAttributeExpression = (
@@ -82,11 +98,10 @@ export function getSafelistSvelte(
                                 libraryAttributeExpression.end
                             );
                             // compile with found props
-                            const evalResult = (0, eval)(
-                                "(" + evalString + ")"
+                            const compiled = evaluateProps(
+                                evalString,
+                                matchingRegistration
                             );
-                            const compiled =
-                                matchingRegistration.compile(evalResult);
                             safelist.push(...safelistFromCompiled(compiled));
                         }
                     }
@@ -107,32 +122,6 @@ export async function reloadTailwind() {
         encoding: "utf8",
     });
     await writeFile(tailwindPath, fileContent);
-}
-
-type GlobalSafelist = Map<string, string[]>;
-
-export function setGlobalSafelist(safelist: [string, string[]][]) {
-    set(global, `${shortLibraryName}.safelist`, new Map(safelist));
-}
-
-export function getGlobalSafelist() {
-    return get(global, `${shortLibraryName}.safelist`) as
-        | GlobalSafelist
-        | undefined;
-}
-
-export function getGlobalSafelistValue(key: string) {
-    return (
-        get(global, `${shortLibraryName}.safelist`) as
-            | GlobalSafelist
-            | undefined
-    )?.get(key);
-}
-
-export function setGlobalSafelistValue(key: string, value: string[]) {
-    const currentSafelist = getGlobalSafelist();
-    if (currentSafelist == undefined) setGlobalSafelist([[key, value]]);
-    else currentSafelist.set(key, value);
 }
 
 export function setGlobalWatcherSubscription(w: AsyncSubscription) {
@@ -216,11 +205,15 @@ export function getDynamicSafelist() {
     return uniq([...finalSafelist.values()].flatMap(c => c));
 }
 
-export function safelistFromCompiled(compiled: CompileResult): string[] {
-    return [
-        ...Object.values(compiled.styles).flatMap(s => s),
-        ...Object.values(compiled.children).flatMap(c =>
-            safelistFromCompiled(c)
-        ),
-    ];
+export function safelistFromCompiled(
+    compiled: CompileResult | CompileResult[]
+): string[] {
+    if (!Array.isArray(compiled))
+        return [
+            ...Object.values(compiled.styles).flatMap(s => s),
+            ...Object.values(compiled.children).flatMap(c =>
+                safelistFromCompiled(c)
+            ),
+        ];
+    return uniq(compiled.flatMap(c => safelistFromCompiled(c)));
 }

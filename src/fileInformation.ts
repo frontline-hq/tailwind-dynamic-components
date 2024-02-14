@@ -12,6 +12,7 @@ export type FileType =
 
 export type FileInformation = {
     type: FileType;
+    path: string;
 };
 
 const scriptExtensions = [".js", ".ts"];
@@ -20,7 +21,7 @@ export const getFileInformation = (
     config: TransformConfig,
     rawId: string
 ): FileInformation | undefined => {
-    if (rawId.startsWith("virtual:")) return { type: "virtual" };
+    if (rawId.startsWith("virtual:")) return { type: "virtual", path: "" };
     const id = path.normalize(rawId);
 
     if (
@@ -34,19 +35,22 @@ export const getFileInformation = (
 
     if (scriptExtensions.includes(ext)) {
         if (name.endsWith(`${shortLibraryName}`))
-            return { type: "registration" };
+            return { type: "registration", path: id };
         if ("vite.config.ts".includes(name))
             return {
                 type: "configuration",
+                path: id,
             };
         return {
             type: "*.js",
+            path: id,
         };
     }
 
     if (ext === ".svelte") {
         return {
             type: "*.svelte",
+            path: id,
         };
     }
 

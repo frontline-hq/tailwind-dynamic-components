@@ -9,19 +9,13 @@ export const transformSvelte = async (
     config: TransformConfig,
     code: string
 ) => {
-    let safelist: string[] = [];
     const transformed = await preprocess(code, [
         vitePreprocess({ script: true, style: true }),
         {
             markup: async ({ content }) => {
                 const s = new MagicString(content);
 
-                const {
-                    elementsToReplace,
-                    importsToAdd,
-                    ast,
-                    safelist: sl,
-                } = await analyze(
+                const { elementsToReplace, importsToAdd, ast } = await analyze(
                     content,
                     config.library.registrations,
                     config.library.tagNameDelimiter
@@ -42,10 +36,10 @@ export const transformSvelte = async (
                 elementsToReplace.forEach(e =>
                     s.update(e.start, e.end, e.transformed)
                 );
-                safelist = sl;
                 return {
                     code: s.toString(),
                     map: s.generateMap(),
+                    dependencies: [...importsToAdd.keys()],
                 };
             },
         },
@@ -55,6 +49,5 @@ export const transformSvelte = async (
     return {
         code: transformed.code,
         map: transformed.map as SourceMap,
-        safelist,
     };
 };

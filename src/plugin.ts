@@ -35,6 +35,9 @@ export async function plugin(): Promise<Plugin> {
         name: `vite-plugin-${shortLibraryName}`,
         // makes sure we run before vite-plugin-svelte
         enforce: "pre",
+        config: () => ({
+            server: { fs: { allow: [`./${configFileName}`] } },
+        }),
         // Restart vite server when the library config changes ✅
         // Check: does that also inlude dependencies of config file? ❌
         // (credit to https://github.com/antfu/vite-plugin-restart)

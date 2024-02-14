@@ -1,12 +1,23 @@
 import merge from "lodash.merge";
 import mergeWith from "lodash.mergewith";
+import { namedTypes as n } from "ast-types";
+import {
+    evalStringToParameterVariants,
+    getPropPermutations,
+    parseAndFindObjectExpression,
+    testProperty,
+} from "./utils";
+import { libraryName } from "./library.config";
 
 export const variantDescriptionDelimiter = "_";
 export const whitespaceCharsRegex = "\\t\\n\\r\\s";
 
-type RegistrationPropsKey = string | number | symbol;
-type RegistrationPropsValue = (string | number | symbol)[];
-type RegistrationProps = Record<RegistrationPropsKey, RegistrationPropsValue>;
+export type RegistrationPropsKey = string | number | symbol;
+export type RegistrationPropsValue = (string | number | symbol)[];
+export type RegistrationProps = Record<
+    RegistrationPropsKey,
+    RegistrationPropsValue
+>;
 
 type RegistrationDependenciesKey = string | number | symbol;
 
@@ -17,7 +28,7 @@ type RegistrationDependencies = {
     [key: RegistrationDependenciesKey]: Registration;
 };
 
-type RegistrationCompileParameters<Props extends RegistrationProps> = {
+export type RegistrationCompileParameters<Props extends RegistrationProps> = {
     [P in keyof Props]:
         | Props[P][number]
         | { default: Props[P][number]; [twModifier: string]: Props[P][number] };
@@ -268,9 +279,34 @@ export class Registration<
     }
 
     compile(
-        parameters: CompileParameters
+        parameters: CompileParameters,
+        evalString?: string
     ): CompileResult<StyleProperties, Dependencies> {
         const variants = parametersToVariants(parameters);
+        // If evalString is known, test evalString:
+        // If there is a value in evalString that is not predictable and an object in the parameters throw error.
+        if (evalString) {
+            const objectExpression = parseAndFindObjectExpression(evalString);
+            // find keys that are unpredictable
+            objectExpression.properties.forEach(property => {
+                const [keyValue, value] = testProperty(property);
+                if (
+                    !n.Literal.check(value) &&
+                    !n.ObjectExpression.check(value)
+                ) {
+                    const runtimeType = typeof parameters[keyValue];
+                    // test if the unpredictable parameter value is an object
+                    if (
+                        runtimeType != "number" &&
+                        runtimeType != "symbol" &&
+                        runtimeType != "string"
+                    )
+                        throw new Error(
+                            `${libraryName} cannot predict the safelist for a dynamic value with a modifier.`
+                        );
+                }
+            });
+        }
         // Generate compiled styles as object {default: {a: ["", "", ...], b: ...}, "hover:md": {a: ["", "", ...], b: ...}}
         const stylesSortedByVariants = Object.fromEntries(
             Object.entries(variants).map(([k, v]) => [
@@ -347,6 +383,24 @@ export class Registration<
             styles,
             children,
         } as CompileResult<StyleProperties, Dependencies>;
+    }
+
+    // compile entries
+    compileAll(evalString: string) {
+        // get prop permutations (all possible combinations)
+        const { type, parameterVariants } = evalStringToParameterVariants(
+            evalString,
+            this.props
+        );
+        if (type === "not-optimal") {
+            // Emit warning that this will generate
+            console.log(`Estimating safelisted classes of \`${evalString}\`.`);
+            console.log("This will lead to inefficient safelisting.");
+        }
+        const permutations = getPropPermutations<Props, CompileParameters>(
+            parameterVariants
+        );
+        return permutations.map(per => this.compile(per));
     }
 }
 
