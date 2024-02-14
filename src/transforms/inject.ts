@@ -116,7 +116,7 @@ export async function analyze(
                                 // Inject runtime compile.
                                 tdcReplacement = `${declarableConfigName}.registrations${path.map(
                                     p => `["${String(p)}"]`
-                                )}.compile(${evalString}, "${evalString}")`;
+                                )}.compile(${evalString}, \`${evalString}\`)`;
                             }
                             // Replace compiled result
                             s.update(
