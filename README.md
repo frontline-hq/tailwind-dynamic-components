@@ -44,7 +44,7 @@ This is accomplished by offering a component design registration standard.
     ```ts
     // tailwind.config.ts
     import type { Config } from "tailwindcss";
-    import { getDynamicSafelist } from "@frontline-hq/tdc";
+    import { getDynamicSafelist } from "@frontline-hq/tdc/tailwind";
 
     export default {
         content: [
@@ -58,11 +58,7 @@ This is accomplished by offering a component design registration standard.
             extend: {},
         },
         /* Add the safelist here */
-        safelist: [
-            getDynamicSafelist({
-                /* optionally debug: boolean to debug safelist */
-            }),
-        ],
+        safelist: [...getDynamicSafelist()],
         plugins: [],
     } as Config;
     ```
@@ -259,3 +255,64 @@ mappings: {
 	},
 /* ... */
 ```
+
+## Usage
+
+You can specify which version of a component you want to be rendered by passing them in the tdc prop.
+There are differences on how optimized the resulting CSS will be though.
+
+This can be explained by how we built the safelisting.
+It searches files and analyzes the code withing the `tdc={{}}` brackets to generate the dynamic tailwind safelist.
+If there are variables used within these brackets, that are defined elsewhere, the plugin will try to guess all possible values this variable could take and generate the safelist accordingly (less optimized / more general)
+
+1.  **Fully optimized ✅**
+
+    Best specify all your props so that the information contained within the `tdc={{}}` brackets are complete.
+
+    Example:
+
+    ```svelte
+    <!-- +page.svelte -->
+    <tdc-button tdc={{color: "green", size: {default: "sm", md: "md"}}}>
+    ```
+
+2.  **Partially optimized ⚠️**
+
+    The tdc props are specified but not all information can be extracted by only looking within the `tdc={{}}` brackets.
+
+    Example:
+
+    ```svelte
+    <!-- +page.svelte -->
+    <script>
+        const color = "green"
+        const defaultSize = "sm"
+        const mdSize = "md"
+    </script>
+    <tdc-button tdc={{color: color, size: {default: defaultSize, md: mdSize}}}>
+    ```
+
+3.  **Not optimizable ❌**
+
+    If specifying breakpoint dependent styles, you can't use variables for the object defining it.
+    While the syntax in the example above works, the one below will render an error during runtime:
+
+    Example:
+
+    ```svelte
+    <!-- +page.svelte -->
+    <script>
+        const color = "green"
+        const defaultSize = "sm"
+        const mdSize = "md"
+        const size = {default: defaultSize, md: mdSize}
+    </script>
+    <tdc-button tdc={{color: color, size: size}}>
+    ```
+
+    That is because we cannot guess which tailwind modifiers could be used in the `tdc` prop `size`.
+
+In any case, you will get
+
+-   a warning for unoptimized code
+-   a runtime error for non-optimizable code
