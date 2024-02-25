@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { checkRegistrations, getTransformConfig } from "./config";
+import { checkRegistrations } from "./config";
 import { Registration } from "../register";
 
 const nakedRegistration = new Registration({

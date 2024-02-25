@@ -47,8 +47,7 @@ describe("analyze", () => {
                     </tdc-icon>
                 `,
                 [mockedReg1],
-                "-",
-                "./some-file-path.svelte"
+                "-"
             );
             expect(analysisResult.elementsToReplace).toMatchInlineSnapshot(`
               [
@@ -77,15 +76,14 @@ describe("analyze", () => {
                     </tdc-icon>
                 `,
                 [mockedReg1],
-                "-",
-                "./some-file-path.svelte"
+                "-"
             );
             expect(analysisResult.elementsToReplace).toMatchInlineSnapshot(`
               [
                 {
                   "end": 139,
                   "start": 56,
-                  "transformed": "<TdcIcon tdc={tdcConfig.registrations[\\"0\\"].compile({some, test: \\"\\", obj: [\\"\\", \\"\\"]}, \\"{some, test: \\"\\", obj: [\\"\\", \\"\\"]}\\")}>
+                  "transformed": "<TdcIcon tdc={tdcConfig.registrations[\\"0\\"].compile({some, test: \\"\\", obj: [\\"\\", \\"\\"]}, \`{some, test: \\"\\", obj: [\\"\\", \\"\\"]}\`)}>
                   <h1>Hey there</h1>
               </TdcIcon>",
                 },
@@ -115,8 +113,7 @@ describe("analyze", () => {
                     </tdc-button>
                 `,
                 [mockedReg2],
-                "-",
-                "./some-file-path.svelte"
+                "-"
             );
             expect(analysisResult.elementsToReplace).toMatchInlineSnapshot(`
               [
