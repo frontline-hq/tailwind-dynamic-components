@@ -47,17 +47,24 @@ describe("analyze", () => {
                     </tdc-icon>
                 `,
                 [mockedReg1],
-                "-",
-                "./some-file-path.svelte"
+                "-"
             );
             expect(analysisResult.elementsToReplace).toMatchInlineSnapshot(`
               [
                 {
-                  "end": 99,
+                  "end": 62,
+                  "start": 27,
+                  "transformed": "{\\"styles\\":{\\"some\\":\\"\\",\\"compiled\\":\\"\\",\\"props\\":[\\"a\\",\\"b\\"]},\\"children\\":{}}",
+                },
+                {
+                  "end": 21,
                   "start": 12,
-                  "transformed": "<TdcIcon tdc={{\\"styles\\":{\\"some\\":\\"\\",\\"compiled\\":\\"\\",\\"props\\":[\\"a\\",\\"b\\"]},\\"children\\":{}}}>
-                  <h1>Hey there</h1>
-              </TdcIcon>",
+                  "transformed": "<TdcIcon",
+                },
+                {
+                  "end": 98,
+                  "start": 88,
+                  "transformed": "</TdcIcon",
                 },
               ]
             `);
@@ -77,17 +84,24 @@ describe("analyze", () => {
                     </tdc-icon>
                 `,
                 [mockedReg1],
-                "-",
-                "./some-file-path.svelte"
+                "-"
             );
             expect(analysisResult.elementsToReplace).toMatchInlineSnapshot(`
               [
                 {
-                  "end": 139,
+                  "end": 102,
+                  "start": 71,
+                  "transformed": "tdcConfig.registrations[\\"0\\"].compile({some, test: \\"\\", obj: [\\"\\", \\"\\"]}, \`{some, test: \\"\\", obj: [\\"\\", \\"\\"]}\`)",
+                },
+                {
+                  "end": 65,
                   "start": 56,
-                  "transformed": "<TdcIcon tdc={tdcConfig.registrations[\\"0\\"].compile({some, test: \\"\\", obj: [\\"\\", \\"\\"]}, \\"{some, test: \\"\\", obj: [\\"\\", \\"\\"]}\\")}>
-                  <h1>Hey there</h1>
-              </TdcIcon>",
+                  "transformed": "<TdcIcon",
+                },
+                {
+                  "end": 138,
+                  "start": 128,
+                  "transformed": "</TdcIcon",
                 },
               ]
             `);
@@ -115,27 +129,39 @@ describe("analyze", () => {
                     </tdc-button>
                 `,
                 [mockedReg2],
-                "-",
-                "./some-file-path.svelte"
+                "-"
             );
             expect(analysisResult.elementsToReplace).toMatchInlineSnapshot(`
               [
                 {
-                  "end": 216,
-                  "start": 12,
-                  "transformed": "<TdcButton tdc={{\\"styles\\":{\\"some\\":\\"\\",\\"other\\":\\"\\",\\"compiled\\":\\"\\",\\"props\\":[\\"c\\",\\"d\\"]},\\"children\\":{\\"icon\\":{\\"styles\\":{\\"some\\":\\"\\",\\"compiled\\":\\"\\",\\"props\\":[\\"a\\",\\"b\\"]},\\"children\\":{}}}}}>
-                  <tdc-button-icon tdc={{some: \\"\\", test: \\"\\", obj: [\\"\\", \\"\\"]}}>
-                      <h2>Whats up</h2>
-                  </tdc-button-icon>
-                  <h1>Hey there</h1>
-              </TdcButton>",
+                  "end": 64,
+                  "start": 29,
+                  "transformed": "{\\"styles\\":{\\"some\\":\\"\\",\\"other\\":\\"\\",\\"compiled\\":\\"\\",\\"props\\":[\\"c\\",\\"d\\"]},\\"children\\":{\\"icon\\":{\\"styles\\":{\\"some\\":\\"\\",\\"compiled\\":\\"\\",\\"props\\":[\\"a\\",\\"b\\"]},\\"children\\":{}}}}",
                 },
                 {
-                  "end": 179,
+                  "end": 23,
+                  "start": 12,
+                  "transformed": "<TdcButton",
+                },
+                {
+                  "end": 215,
+                  "start": 203,
+                  "transformed": "</TdcButton",
+                },
+                {
+                  "end": 128,
+                  "start": 93,
+                  "transformed": "{\\"styles\\":{\\"some\\":\\"\\",\\"compiled\\":\\"\\",\\"props\\":[\\"a\\",\\"b\\"]},\\"children\\":{}}",
+                },
+                {
+                  "end": 87,
                   "start": 71,
-                  "transformed": "<TdcButtonIcon tdc={{\\"styles\\":{\\"some\\":\\"\\",\\"compiled\\":\\"\\",\\"props\\":[\\"a\\",\\"b\\"]},\\"children\\":{}}}>
-                      <h2>Whats up</h2>
-                  </TdcButtonIcon>",
+                  "transformed": "<TdcButtonIcon",
+                },
+                {
+                  "end": 178,
+                  "start": 161,
+                  "transformed": "</TdcButtonIcon",
                 },
               ]
             `);
