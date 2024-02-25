@@ -10,7 +10,6 @@ import type {
 } from "svelte/types/compiler/interfaces";
 import { parse } from "svelte/compiler";
 import type { ASTNode } from "ast-types";
-import MagicString from "magic-string";
 import {
     findMatchingRegistrations,
     nodeIsAttribute,
@@ -86,10 +85,6 @@ export async function analyze(
                                 libraryAttributeExpression.start,
                                 libraryAttributeExpression.end
                             );
-                            // The string of the whole component in the markup: "<tdc-button tdc={{}}>...</tdc-button>"
-                            const s = new MagicString(
-                                markup.slice(node.start, node.end)
-                            );
                             let tdcReplacement;
                             try {
                                 // compile with found props
@@ -119,27 +114,44 @@ export async function analyze(
                                 )}.compile(${evalString}, \`${evalString}\`)`;
                             }
                             // Replace compiled result
-                            s.update(
-                                libraryAttributeExpression.start - node.start,
-                                libraryAttributeExpression.end - node.end,
-                                tdcReplacement
-                            );
-
-                            // Replace component opening tag
-                            s.replace(
-                                new RegExp(`^<${node.name}`, "g"),
-                                `<${declarableComponentName}`
-                            );
-                            s.replace(
-                                new RegExp(
-                                    `</${node.name}(?=[${whitespaceCharsRegex}]*>$)`
-                                ),
-                                `</${declarableComponentName}`
-                            );
                             elementsToReplace.push({
-                                start: node.start,
-                                end: node.end,
-                                transformed: s.toString(),
+                                start: libraryAttributeExpression.start,
+                                end: libraryAttributeExpression.end,
+                                transformed: tdcReplacement,
+                            });
+
+                            const nodeString = markup.slice(
+                                node.start,
+                                node.end
+                            );
+                            // Replace component opening tag
+                            [
+                                ...nodeString.matchAll(
+                                    new RegExp(`^<${node.name}`, "g")
+                                ),
+                            ].forEach(m => {
+                                if (m.index != undefined)
+                                    elementsToReplace.push({
+                                        start: node.start + m.index,
+                                        end: node.start + m.index + m[0].length,
+                                        transformed: `<${declarableComponentName}`,
+                                    });
+                            });
+                            // Replace component closing tag
+                            [
+                                ...nodeString.matchAll(
+                                    new RegExp(
+                                        `</${node.name}(?=[${whitespaceCharsRegex}]*>$)`,
+                                        "g"
+                                    )
+                                ),
+                            ].forEach(m => {
+                                if (m.index != undefined)
+                                    elementsToReplace.push({
+                                        start: node.start + m.index,
+                                        end: node.start + m.index + m[0].length,
+                                        transformed: `</${declarableComponentName}`,
+                                    });
                             });
                         }
                     }

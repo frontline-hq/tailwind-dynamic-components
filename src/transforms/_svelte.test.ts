@@ -65,11 +65,14 @@ describe("process svelte", () => {
 `
         );
         expect(result.code).toMatchInlineSnapshot(`
-          "<script>import {TdcIcon} from \\"@frontline-hq/tdc/Icon\\";
+          "<script>import {TdcWrapper} from \\"@frontline-hq/tdc/Wrapper\\";
+          import {TdcIcon} from \\"@frontline-hq/tdc/Icon\\";
           </script>
-          <TdcIcon tdc={{\\"styles\\":{\\"some\\":\\"\\",\\"compiled\\":\\"\\",\\"props\\":[\\"a\\",\\"b\\"]},\\"children\\":{}}}>
-              <div></div>
+          <TdcWrapper tdc={{\\"styles\\":{},\\"children\\":{}}}>
+          <TdcIcon tdc={{\\"styles\\":{},\\"children\\":{}}}>
+          <div></div>
           </TdcIcon>
+          </TdcWrapper>
           "
         `);
     });
