@@ -149,8 +149,9 @@ describe("mergeManipulations", () => {
                 size: ["sm", "md"],
             },
             styles: () => ({
-                size: "bg-blue",
+                color: "bg-blue",
             }),
+            dependencies: {},
         } as unknown as Registration;
         expect(
             mergeManipulations(
@@ -158,13 +159,53 @@ describe("mergeManipulations", () => {
                 [
                     new Manipulation(registration, {
                         styles: () => ({
-                            size: "bg-green",
+                            color: "bg-green",
                         }),
                     }),
                 ]
             )[0].styles()
         ).toEqual({
-            size: "bg-green",
+            color: "bg-green",
+        });
+    });
+    test("nested in dependencies", () => {
+        const registrationNested = {
+            identifier: "tdc-button-icon",
+            props: {
+                size: ["sm", "md"],
+            },
+            styles: () => ({
+                text: "text-sm",
+            }),
+            dependencies: {},
+        } as unknown as Registration;
+        const registration = {
+            identifier: "tdc-button",
+            props: {
+                size: ["sm", "md"],
+            },
+            styles: () => ({
+                color: "bg-blue",
+            }),
+            dependencies: {
+                icon: registrationNested,
+            },
+        } as unknown as Registration;
+        const result = mergeManipulations(
+            [registration],
+            [
+                new Manipulation(registration, {
+                    styles: () => ({
+                        text: "text-xl",
+                    }),
+                }),
+            ]
+        )[0];
+        expect(result.dependencies.icon.styles()).toEqual({
+            text: "text-sm",
+        });
+        expect(result.styles()).toEqual({
+            color: "bg-blue",
         });
     });
 });

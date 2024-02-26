@@ -329,14 +329,26 @@ export function mergeManipulations<
             CompileParameters
         >
     >
-) {
+): Array<Registration> {
     return registrations.map(r => {
         const foundManipulation = manipulations.find(
             o => o.identifier === r.identifier
         );
+        const dependencyManipulation = Object.fromEntries(
+            Object.entries(r.dependencies).map(
+                ([dependencyKey, dependencyRegistration]) => [
+                    dependencyKey,
+                    ...mergeManipulations(
+                        [dependencyRegistration],
+                        manipulations
+                    ),
+                ]
+            )
+        );
         if (foundManipulation)
             return new Registration({
                 ...r,
+                dependencies: dependencyManipulation,
                 styles: s => {
                     return Object.fromEntries(
                         Object.entries(r.styles(s)).map(
@@ -355,7 +367,7 @@ export function mergeManipulations<
                     );
                 },
             });
-        return r;
+        return new Registration({ ...r, dependencies: dependencyManipulation });
     });
 }
 
