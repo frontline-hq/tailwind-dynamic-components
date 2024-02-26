@@ -4,7 +4,7 @@ import { pathToFileURL } from "url";
 /* import { VERSION } from "@sveltejs/kit"; */
 import type { Config as SvelteConfig } from "@sveltejs/kit";
 import { shortLibraryName } from "../library.config";
-import type { Registration } from "../register";
+import { Manipulation, Registration, mergeManipulations } from "../register";
 import j from "jiti";
 
 export const configFileName = `${shortLibraryName}.config.ts` as const;
@@ -33,6 +33,7 @@ export type LibraryConfig = {
     registrations: Array<Registration>;
     tagNameDelimiter: string;
     tailwindConfigPath: string;
+    manipulations: Array<Manipulation>;
 };
 
 export type TransformConfig = {
@@ -68,6 +69,16 @@ export function checkRegistrations(registrations: Array<Registration>) {
     return;
 }
 
+export function checkManipulations(manipulations: Array<Manipulation>) {
+    // 2. Check that there are no duplicate descriptions.
+    const duplicate = manipulations
+        .map(r => r.identifier)
+        .filter((item, index, array) => array.indexOf(item) !== index);
+    if (duplicate.length > 0)
+        throw new Error(`Found duplicate manipulation ${String(duplicate)}.`);
+    return;
+}
+
 export function getLibraryConfig() {
     const jiti = j(
         /*
@@ -84,7 +95,14 @@ export function getLibraryConfig() {
         throw new Error(
             `No default export found in ./${shortLibraryName}.config.ts`
         );
-    return libraryConfig;
+    // Merge manipulations and registrations
+    return {
+        ...libraryConfig,
+        registrations: mergeManipulations(
+            libraryConfig.registrations,
+            libraryConfig.manipulations
+        ),
+    } as LibraryConfig;
 }
 
 export async function getTransformConfig(
@@ -93,6 +111,8 @@ export async function getTransformConfig(
     const libraryConfig = getLibraryConfig();
     // Process registrations in libraryconfig.
     checkRegistrations(libraryConfig.registrations);
+    // Process manipulations in libraryconfig
+    checkManipulations(libraryConfig.manipulations);
     // Svelte specific data
 
     let svelteKitConfigData: TransformConfig["svelteKit"];

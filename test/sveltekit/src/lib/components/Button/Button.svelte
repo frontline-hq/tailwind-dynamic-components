@@ -7,6 +7,8 @@
 	}
 
 	export let tdc: $$Props['tdc'];
+
+	console.log(tdc.styles.manipulatedB.join(' '));
 </script>
 
 <button class={tdc.styles.a.join(' ')}>Some button</button>

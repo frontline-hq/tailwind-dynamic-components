@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { checkRegistrations } from "./config";
-import { Registration } from "../register";
+import { checkRegistrations, mergeManipulations } from "./config";
+import { Manipulation, Registration } from "../register";
 
 const nakedRegistration = new Registration({
     identifier: "icon",
@@ -52,3 +52,4 @@ describe("checkRegistrations", () => {
         ).toThrowError("Found duplicate registration iconChild.");
     });
 });
+/* TODO: add test for duplicate manipulations */

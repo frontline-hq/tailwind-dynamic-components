@@ -9,7 +9,8 @@ export const button = new Registration({
 			sm: '4',
 			md: '8'
 		})} bg-${s('destructive', 'red', { false: 'green' })}-400`,
-		b: `w-${s('scale', { sm: '12', md: '16' })}`
+		b: `w-${s('scale', { sm: '12', md: '16' })}`,
+		manipulatedB: `w-${s('scale', { sm: '12', md: '16' })}`
 	}),
 	dependencies: {
 		icon: icon
