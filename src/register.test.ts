@@ -1,5 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { Registration, parametersToVariants } from "./register";
+import {
+    Manipulation,
+    Registration,
+    mergeManipulations,
+    parametersToVariants,
+} from "./register";
 
 describe("parametersToVariants", () => {
     test("Convert simple parameters", () => {
@@ -136,3 +141,30 @@ describe("Register", () => {
 });
 
 // Which styles should be prepended?
+describe("mergeManipulations", () => {
+    test("simple", () => {
+        const registration = {
+            identifier: "tdc-icon",
+            props: {
+                size: ["sm", "md"],
+            },
+            styles: () => ({
+                size: "bg-blue",
+            }),
+        } as unknown as Registration;
+        expect(
+            mergeManipulations(
+                [registration],
+                [
+                    new Manipulation(registration, {
+                        styles: () => ({
+                            size: "bg-green",
+                        }),
+                    }),
+                ]
+            )[0].styles()
+        ).toEqual({
+            size: "bg-green",
+        });
+    });
+});

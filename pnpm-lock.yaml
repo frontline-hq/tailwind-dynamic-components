@@ -56,6 +56,9 @@ dependencies:
     svelte:
         specifier: ^4.2.8
         version: 4.2.8
+    tailwind-merge:
+        specifier: ^2.2.1
+        version: 2.2.1
     ts-dedent:
         specifier: ^2.2.0
         version: 2.2.0
@@ -158,6 +161,16 @@ packages:
         dependencies:
             "@jridgewell/gen-mapping": 0.3.3
             "@jridgewell/trace-mapping": 0.3.20
+
+    /@babel/runtime@7.23.9:
+        resolution:
+            {
+                integrity: sha512-0CX6F+BI2s9dkUqr08KFrAIZgNFj75rdBU/DjCyYLIaV/quFjkk6T+EJ2LkZHyZTbEV4L5p97mNkUsHl2wLFAw==,
+            }
+        engines: { node: ">=6.9.0" }
+        dependencies:
+            regenerator-runtime: 0.14.1
+        dev: false
 
     /@bcoe/v8-coverage@0.2.3:
         resolution:
@@ -3472,6 +3485,13 @@ packages:
             }
         dev: true
 
+    /regenerator-runtime@0.14.1:
+        resolution:
+            {
+                integrity: sha512-dYnhHh0nJoMfnkZs6GmmhFknAGRrLznOu5nc9ML+EJxGvrx6H7teuevqVqCuPcPK//3eDrrjQhehXVx9cnkGdw==,
+            }
+        dev: false
+
     /require-directory@2.1.1:
         resolution:
             {
@@ -3810,6 +3830,15 @@ packages:
             "@pkgr/core": 0.1.0
             tslib: 2.6.2
         dev: true
+
+    /tailwind-merge@2.2.1:
+        resolution:
+            {
+                integrity: sha512-o+2GTLkthfa5YUt4JxPfzMIpQzZ3adD1vLVkvKE1Twl9UAhGsEbIZhHHZVRttyW177S8PDJI3bTQNaebyofK3Q==,
+            }
+        dependencies:
+            "@babel/runtime": 7.23.9
+        dev: false
 
     /test-exclude@6.0.0:
         resolution:

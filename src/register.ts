@@ -8,6 +8,7 @@ import {
     testProperty,
 } from "./utils";
 import { libraryName } from "./library.config";
+import { twMerge } from "tailwind-merge";
 
 export const variantDescriptionDelimiter = "_";
 export const whitespaceCharsRegex = "\\t\\n\\r\\s";
@@ -235,6 +236,129 @@ export interface CompileResult<
     };
 }
 
+class BaseRegistration<
+    const Identifier extends string = string,
+    const Props extends RegistrationProps = RegistrationProps,
+> {
+    identifier;
+    props;
+    constructor({
+        identifier,
+        props,
+    }: {
+        identifier: Identifier;
+        props: Props;
+    }) {
+        this.identifier = identifier;
+        this.props = props;
+    }
+}
+
+export class Manipulation<
+    const Identifier extends string = string,
+    const Props extends RegistrationProps = RegistrationProps,
+    const StyleProperties extends
+        RegistrationStyleProperties = RegistrationStyleProperties,
+    const Dependencies extends
+        RegistrationDependencies = RegistrationDependencies,
+    const Mappings extends RegistrationMappings<
+        Dependencies,
+        Props
+    > = RegistrationMappings<Dependencies, Props>,
+    const CompileParameters extends
+        RegistrationCompileParameters<Props> = RegistrationCompileParameters<Props>,
+> extends BaseRegistration<Identifier, Props> {
+    oldStyles;
+    styles;
+    propReplacements;
+    constructor(
+        registration: Registration<
+            Identifier,
+            Props,
+            StyleProperties,
+            Dependencies,
+            Mappings,
+            CompileParameters
+        >,
+        {
+            styles,
+            propReplacements,
+        }: {
+            styles?: (s: S<Props>) => Partial<StyleProperties>;
+            propReplacements?: {
+                /* Propname would be "sizes" e.g. for button */
+                [PropName in keyof Props]?: {
+                    /* Propvalue would be "2xl" e.g. for "sizes" in button */
+                    [PropValue in Props[PropName][number]]: Props[PropName][number];
+                };
+            };
+        }
+    ) {
+        super({ ...registration });
+        this.oldStyles = registration.styles;
+        this.styles = styles;
+        this.propReplacements = propReplacements;
+    }
+}
+
+export function mergeManipulations<
+    const Identifier extends string,
+    const Props extends RegistrationProps,
+    const StyleProperties extends RegistrationStyleProperties,
+    const Dependencies extends RegistrationDependencies,
+    const Mappings extends RegistrationMappings<Dependencies, Props>,
+    const CompileParameters extends RegistrationCompileParameters<Props>,
+>(
+    registrations: Array<
+        Registration<
+            Identifier,
+            Props,
+            StyleProperties,
+            Dependencies,
+            Mappings,
+            CompileParameters
+        >
+    >,
+    manipulations: Array<
+        Manipulation<
+            Identifier,
+            Props,
+            StyleProperties,
+            Dependencies,
+            Mappings,
+            CompileParameters
+        >
+    >
+) {
+    return registrations.map(r => {
+        const foundManipulation = manipulations.find(
+            o => o.identifier === r.identifier
+        );
+        if (foundManipulation)
+            return new Registration({
+                ...r,
+                styles: s => {
+                    return Object.fromEntries(
+                        Object.entries(r.styles(s)).map(
+                            ([styleKey, styles]) => {
+                                return [
+                                    styleKey,
+                                    twMerge(
+                                        styles,
+                                        foundManipulation.styles?.(s)[
+                                            styleKey
+                                        ] ?? ""
+                                    ),
+                                ];
+                            }
+                        )
+                    );
+                },
+            });
+        return r;
+    });
+}
+
 export class Registration<
     const Identifier extends string = string,
     const Props extends RegistrationProps = RegistrationProps,
@@ -248,9 +372,7 @@ export class Registration<
     > = RegistrationMappings<Dependencies, Props>,
     const CompileParameters extends
         RegistrationCompileParameters<Props> = RegistrationCompileParameters<Props>,
-> {
-    identifier;
-    props;
+> extends BaseRegistration<Identifier, Props> {
     styles;
     dependencies;
     mappings;
@@ -270,8 +392,7 @@ export class Registration<
         mappings: Mappings;
         importPath: string;
     }) {
-        this.identifier = identifier;
-        this.props = props;
+        super({ identifier, props });
         this.styles = styles;
         this.dependencies = dependencies;
         this.mappings = mappings;
