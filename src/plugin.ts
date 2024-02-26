@@ -4,6 +4,7 @@ import { getFileInformation } from "./fileInformation";
 import { dedent } from "ts-dedent";
 import { libraryName, shortLibraryName } from "./library.config";
 import { transformCode } from "./transforms";
+import { getGlobalWatcherSubscription } from "./utils";
 
 function printDebug(
     filePath: string,
@@ -60,6 +61,11 @@ export async function plugin(): Promise<Plugin> {
             async function unlinkFile() {
                 await server.restart();
             }
+        },
+        async buildEnd() {
+            console.log("Closing filesystem watcher...");
+            const w = getGlobalWatcherSubscription();
+            if (w) await w.unsubscribe();
         },
         async transform(code, id) {
             const fileInformation = getFileInformation(config, id);

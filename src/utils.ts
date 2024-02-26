@@ -16,6 +16,7 @@ import type {
 import get from "lodash.get";
 import set from "lodash.set";
 import { Property, SpreadElement, parse } from "acorn";
+import { AsyncSubscription } from "@parcel/watcher";
 
 export function nodeIsAttribute(node: ASTNode): node is Attribute {
     return node.type === "Attribute";
@@ -250,4 +251,14 @@ export function evalStringToParameterVariants<Props extends RegistrationProps>(
         })
     ) as RegistrationCompileParameterVariant<Props>;
     return { type: type as "optimal" | "not-optimal", parameterVariants };
+}
+
+export function setGlobalWatcherSubscription(w: AsyncSubscription) {
+    set(global, `${shortLibraryName}.watcher`, w);
+}
+
+export function getGlobalWatcherSubscription() {
+    return get(global, `${shortLibraryName}.watcher`) as
+        | AsyncSubscription
+        | undefined;
 }

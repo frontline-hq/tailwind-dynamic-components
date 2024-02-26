@@ -5,10 +5,8 @@ import type { CompileResult, Registration } from "../register";
 import uniq from "lodash.uniq";
 import { configFileName, getLibraryConfig } from "../config/config";
 import fg from "fast-glob";
-import watcher, { AsyncSubscription } from "@parcel/watcher";
+import watcher from "@parcel/watcher";
 import xor from "lodash.xor";
-import set from "lodash.set";
-import get from "lodash.get";
 import { transformSync } from "esbuild";
 import { parse, walk } from "svelte/compiler";
 import type {
@@ -20,12 +18,14 @@ import {
     findMatchingRegistrations,
     getGlobalSafelist,
     getGlobalSafelistValue,
+    getGlobalWatcherSubscription,
     nodeIsAttribute,
     nodeIsElement,
     nodeIsMustacheTag,
     nodeIsObjectExpression,
     resolveComponentName,
     setGlobalSafelist,
+    setGlobalWatcherSubscription,
 } from "../utils";
 import type { ASTNode } from "ast-types";
 import type { Node } from "estree";
@@ -122,16 +122,6 @@ export async function reloadTailwind() {
         encoding: "utf8",
     });
     await writeFile(tailwindPath, fileContent);
-}
-
-export function setGlobalWatcherSubscription(w: AsyncSubscription) {
-    set(global, `${shortLibraryName}.watcher`, w);
-}
-
-export function getGlobalWatcherSubscription() {
-    return get(global, `${shortLibraryName}.watcher`) as
-        | AsyncSubscription
-        | undefined;
 }
 
 export function getDynamicSafelist() {
