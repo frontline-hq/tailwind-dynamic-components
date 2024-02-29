@@ -88,22 +88,21 @@ export function getSafelistSvelte(
                                 | MustacheTag
                                 | undefined
                         )?.expression;
-                        if (
+                        // extract the library attribute object expression string
+                        const evalString =
                             libraryAttributeExpression &&
                             nodeIsObjectExpression(libraryAttributeExpression)
-                        ) {
-                            // extract the library attribute object expression string
-                            const evalString = transpiled.slice(
-                                libraryAttributeExpression.start,
-                                libraryAttributeExpression.end
-                            );
-                            // compile with found props
-                            const compiled = evaluateProps(
-                                evalString,
-                                matchingRegistration
-                            );
-                            safelist.push(...safelistFromCompiled(compiled));
-                        }
+                                ? transpiled.slice(
+                                      libraryAttributeExpression.start,
+                                      libraryAttributeExpression.end
+                                  )
+                                : "{}";
+                        // compile with found props
+                        const compiled = evaluateProps(
+                            evalString,
+                            matchingRegistration
+                        );
+                        safelist.push(...safelistFromCompiled(compiled));
                     }
                 }
             }
