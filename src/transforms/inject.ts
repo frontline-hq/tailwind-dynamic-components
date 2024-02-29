@@ -76,84 +76,93 @@ export async function analyze(
                                 | MustacheTag
                                 | undefined
                         )?.expression;
+                        let evalString: string;
                         if (
                             libraryAttributeExpression &&
                             nodeIsObjectExpression(libraryAttributeExpression)
                         ) {
                             // extract the library attribute object expression string
-                            const evalString = markup.slice(
+                            evalString = markup.slice(
                                 libraryAttributeExpression.start,
                                 libraryAttributeExpression.end
                             );
-                            let tdcReplacement;
-                            try {
-                                // compile with found props
-                                const evalResult = (0, eval)(
-                                    "(" + evalString + ")"
+                        } else {
+                            evalString = "{}";
+                        }
+                        let tdcReplacement: string;
+                        try {
+                            // compile with found props
+                            const evalResult = (0, eval)(
+                                "(" + evalString + ")"
+                            );
+                            tdcReplacement = JSON.stringify(
+                                matchingRegistration.compile(evalResult)
+                            );
+                        } catch (error) {
+                            // eval fails
+                            // Add config file to imports
+                            const configImportName = `${shortLibraryName}Config`;
+                            const declarableConfigName =
+                                await findDeclarableIdentifier(
+                                    ast,
+                                    configImportName,
+                                    asyncWalk
                                 );
-                                tdcReplacement = JSON.stringify(
-                                    matchingRegistration.compile(evalResult)
-                                );
-                            } catch (error) {
-                                // eval fails
-                                // Add config file to imports
-                                const configImportName = `${shortLibraryName}Config`;
-                                const declarableConfigName =
-                                    await findDeclarableIdentifier(
-                                        ast,
-                                        configImportName,
-                                        asyncWalk
-                                    );
-                                importsToAdd.set(
-                                    `default as ${declarableConfigName}`,
-                                    getConfigFilePath()
-                                );
-                                // Inject runtime compile.
-                                tdcReplacement = `${declarableConfigName}.registrations${path.map(
-                                    p => `["${String(p)}"]`
-                                )}.compile(${evalString}, \`${evalString}\`)`;
-                            }
+                            importsToAdd.set(
+                                `default as ${declarableConfigName}`,
+                                getConfigFilePath()
+                            );
+                            // Inject runtime compile.
+                            tdcReplacement = `${declarableConfigName}.registrations${path.map(
+                                p => `["${String(p)}"]`
+                            )}.compile(${evalString}, \`${evalString}\`)`;
+                        }
+                        if (
+                            libraryAttributeExpression &&
+                            nodeIsObjectExpression(libraryAttributeExpression)
+                        ) {
                             // Replace compiled result
                             elementsToReplace.push({
                                 start: libraryAttributeExpression.start,
                                 end: libraryAttributeExpression.end,
                                 transformed: tdcReplacement,
                             });
-
-                            const nodeString = markup.slice(
-                                node.start,
-                                node.end
-                            );
-                            // Replace component opening tag
-                            [
-                                ...nodeString.matchAll(
-                                    new RegExp(`^<${node.name}`, "g")
-                                ),
-                            ].forEach(m => {
-                                if (m.index != undefined)
-                                    elementsToReplace.push({
-                                        start: node.start + m.index,
-                                        end: node.start + m.index + m[0].length,
-                                        transformed: `<${declarableComponentName}`,
-                                    });
-                            });
-                            // Replace component closing tag
-                            [
-                                ...nodeString.matchAll(
-                                    new RegExp(
-                                        `</${node.name}(?=[${whitespaceCharsRegex}]*>$)`,
-                                        "g"
-                                    )
-                                ),
-                            ].forEach(m => {
-                                if (m.index != undefined)
-                                    elementsToReplace.push({
-                                        start: node.start + m.index,
-                                        end: node.start + m.index + m[0].length,
-                                        transformed: `</${declarableComponentName}`,
-                                    });
-                            });
                         }
+
+                        const nodeString = markup.slice(node.start, node.end);
+                        // Replace component opening tag
+                        [
+                            ...nodeString.matchAll(
+                                new RegExp(`^<${node.name}`, "g")
+                            ),
+                        ].forEach(m => {
+                            if (m.index != undefined)
+                                elementsToReplace.push({
+                                    start: node.start + m.index,
+                                    end: node.start + m.index + m[0].length,
+                                    transformed: `<${declarableComponentName}${
+                                        libraryAttributeExpression === undefined
+                                            ? ` ${shortLibraryName}={${tdcReplacement}}`
+                                            : ""
+                                    }`,
+                                });
+                        });
+                        // Replace component closing tag
+                        [
+                            ...nodeString.matchAll(
+                                new RegExp(
+                                    `</${node.name}(?=[${whitespaceCharsRegex}]*>$)`,
+                                    "g"
+                                )
+                            ),
+                        ].forEach(m => {
+                            if (m.index != undefined)
+                                elementsToReplace.push({
+                                    start: node.start + m.index,
+                                    end: node.start + m.index + m[0].length,
+                                    transformed: `</${declarableComponentName}`,
+                                });
+                        });
                     }
                 }
             }

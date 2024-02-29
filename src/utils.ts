@@ -202,9 +202,17 @@ export function parseAndFindObjectExpression(evalString: string) {
 export function evalStringToParameterVariants<Props extends RegistrationProps>(
     evalString: string,
     props: Props
-) {
+): {
+    type: "optimal" | "not-optimal" | "propless";
+    parameterVariants: RegistrationCompileParameterVariant<Props>;
+} {
     const objectExpression = parseAndFindObjectExpression(evalString);
-    let type: "optimal" | "not-optimal" = "optimal";
+    let type = "optimal";
+    if (Object.keys(props).length === 0)
+        return {
+            type: "propless" as const,
+            parameterVariants: {} as RegistrationCompileParameterVariant<Props>,
+        };
     const parameterVariants = Object.fromEntries(
         objectExpression.properties.map(property => {
             const [keyValue, value] = testProperty(property);

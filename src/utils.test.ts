@@ -474,4 +474,12 @@ describe("evalStringToParameterVariants", () => {
             });
         });
     });
+    describe("No props", () => {
+        test("Mixed", () => {
+            expect(evalStringToParameterVariants("{}", {})).toEqual({
+                parameterVariants: {},
+                type: "propless",
+            });
+        });
+    });
 });
