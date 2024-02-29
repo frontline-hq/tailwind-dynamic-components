@@ -38,6 +38,35 @@ describe("analyze", () => {
         importPath: "@frontline-hq/tdc/Button",
     } as unknown as Registration;
     describe("simple", async () => {
+        test("no props", async () => {
+            const analysisResult = await analyze(
+                dedent`
+              <div></div>
+              <tdc-icon>
+                  <h1>Hey there</h1>
+              </tdc-icon>
+          `,
+                [mockedReg1],
+                "-"
+            );
+            expect(analysisResult.elementsToReplace).toMatchInlineSnapshot(`
+              [
+                {
+                  "end": 21,
+                  "start": 12,
+                  "transformed": "<TdcIcon tdc={{\\"styles\\":{\\"some\\":\\"\\",\\"compiled\\":\\"\\",\\"props\\":[\\"a\\",\\"b\\"]},\\"children\\":{}}}",
+                },
+                {
+                  "end": 56,
+                  "start": 46,
+                  "transformed": "</TdcIcon",
+                },
+              ]
+            `);
+            expect(analysisResult.importsToAdd).toEqual(
+                new Map([["TdcIcon", "@frontline-hq/tdc/Icon"]])
+            );
+        });
         test("static compile", async () => {
             const analysisResult = await analyze(
                 dedent`

@@ -415,6 +415,12 @@ export class Registration<
         parameters: CompileParameters,
         evalString?: string
     ): CompileResult<StyleProperties, Dependencies> {
+        if (
+            Object.keys(this.props).some(
+                propKey => !Object.hasOwn(parameters, propKey)
+            )
+        )
+            throw new Error("Passing props is required here.");
         const variants = parametersToVariants(parameters);
         // If evalString is known, test evalString:
         // If there is a value in evalString that is not predictable and an object in the parameters throw error.
@@ -440,66 +446,81 @@ export class Registration<
                 }
             });
         }
-        // Generate compiled styles as object {default: {a: ["", "", ...], b: ...}, "hover:md": {a: ["", "", ...], b: ...}}
-        const stylesSortedByVariants = Object.fromEntries(
-            Object.entries(variants).map(([k, v]) => [
-                k,
-                Object.fromEntries(
-                    Object.entries(
-                        this.styles((prop, ...styles) => {
-                            const i = v[prop];
-                            if (styles.length === 2)
-                                if (Object.hasOwn(styles[1], i))
-                                    return styles[1][i] as string;
-                                else return styles[0];
-                            return styles[0][i as keyof (typeof styles)[0]];
-                        })
-                    ).map(([k1, v1]) => [
-                        k1,
-                        v1.split(new RegExp(`[${whitespaceCharsRegex}]+`, "g")),
-                    ])
-                ),
-            ])
-        );
-        // Remove duplicate values from everything but default, then join styles again to string.
-        const stylesJoinedAndDeduped = Object.fromEntries(
-            Object.entries(stylesSortedByVariants).map(([k1, v1]) => [
-                k1,
-                Object.fromEntries(
-                    Object.entries(v1).map(([k2, v2]) => [
-                        k2,
-                        k1 === "default"
-                            ? v2
-                            : v2
-                                  .filter(
-                                      v =>
-                                          !stylesSortedByVariants["default"][
-                                              k2
-                                          ].includes(v)
-                                  )
-                                  .map(v => k1 + ":" + v),
-                    ])
-                ),
-            ])
-        );
-        const styles: Record<string, Array<string>> = {};
-        for (const key in stylesJoinedAndDeduped) {
-            if (
-                Object.prototype.hasOwnProperty.call(
-                    stylesJoinedAndDeduped,
-                    key
-                )
-            ) {
-                mergeWith(
-                    styles,
-                    stylesJoinedAndDeduped[key],
-                    (objVal, srcVal) =>
-                        Array.isArray(objVal)
-                            ? objVal.concat(srcVal)
-                            : undefined
-                );
+        const usesNoProps = Object.keys(this.props).length === 0;
+
+        const styles: Record<string, Array<string>> = usesNoProps
+            ? Object.fromEntries(
+                  Object.entries(this.styles(() => "")).map(([k, v]) => [
+                      k,
+                      v.split(new RegExp(`[${whitespaceCharsRegex}]+`, "g")),
+                  ])
+              )
+            : {};
+
+        if (!usesNoProps) {
+            // Generate compiled styles as object {default: {a: ["", "", ...], b: ...}, "hover:md": {a: ["", "", ...], b: ...}}
+            const stylesSortedByVariants = Object.fromEntries(
+                Object.entries(variants).map(([k, v]) => [
+                    k,
+                    Object.fromEntries(
+                        Object.entries(
+                            this.styles((prop, ...styles) => {
+                                const i = v[prop];
+                                if (styles.length === 2)
+                                    if (Object.hasOwn(styles[1], i))
+                                        return styles[1][i] as string;
+                                    else return styles[0];
+                                return styles[0][i as keyof (typeof styles)[0]];
+                            })
+                        ).map(([k1, v1]) => [
+                            k1,
+                            v1.split(
+                                new RegExp(`[${whitespaceCharsRegex}]+`, "g")
+                            ),
+                        ])
+                    ),
+                ])
+            );
+            // Remove duplicate values from everything but default, then join styles again to string.
+            const stylesJoinedAndDeduped = Object.fromEntries(
+                Object.entries(stylesSortedByVariants).map(([k1, v1]) => [
+                    k1,
+                    Object.fromEntries(
+                        Object.entries(v1).map(([k2, v2]) => [
+                            k2,
+                            k1 === "default"
+                                ? v2
+                                : v2
+                                      .filter(
+                                          v =>
+                                              !stylesSortedByVariants[
+                                                  "default"
+                                              ][k2].includes(v)
+                                      )
+                                      .map(v => k1 + ":" + v),
+                        ])
+                    ),
+                ])
+            );
+            for (const key in stylesJoinedAndDeduped) {
+                if (
+                    Object.prototype.hasOwnProperty.call(
+                        stylesJoinedAndDeduped,
+                        key
+                    )
+                ) {
+                    mergeWith(
+                        styles,
+                        stylesJoinedAndDeduped[key],
+                        (objVal, srcVal) =>
+                            Array.isArray(objVal)
+                                ? objVal.concat(srcVal)
+                                : undefined
+                    );
+                }
             }
         }
+
         const children = Object.fromEntries(
             Object.entries(this.dependencies).map(
                 ([dependencyKey, dependencyRegistration]) => [
@@ -530,9 +551,12 @@ export class Registration<
             console.log(`Estimating safelisted classes of \`${evalString}\`.`);
             console.log("This will lead to inefficient safelisting.");
         }
-        const permutations = getPropPermutations<Props, CompileParameters>(
-            parameterVariants
-        );
+        const permutations =
+            type === "propless"
+                ? [{} as CompileParameters]
+                : getPropPermutations<Props, CompileParameters>(
+                      parameterVariants
+                  );
         return permutations.map(per => this.compile(per));
     }
 }

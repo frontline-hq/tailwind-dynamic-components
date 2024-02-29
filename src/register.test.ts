@@ -55,7 +55,7 @@ describe("parametersToVariants", () => {
 });
 
 describe("Register", () => {
-    test("Compile", () => {
+    describe("Compile", () => {
         const iconRegistration = new Registration({
             identifier: "icon",
             props: { sizes: ["xl", "2xl"], destructive: ["true", "false"] },
@@ -92,27 +92,90 @@ describe("Register", () => {
             },
             importPath: "",
         });
-        expect(
-            registration.compile({
-                destructive: "true",
-                size: { default: "sm", "hover:md": "md" },
-            })
-        ).toEqual({
-            children: {
-                icon: {
-                    children: {},
-                    styles: {
-                        c: ["border-2", "text-red-400", "hover:md:border-4"],
+        test("simple", () => {
+            expect(
+                registration.compile({
+                    destructive: "true",
+                    size: { default: "sm", "hover:md": "md" },
+                })
+            ).toEqual({
+                children: {
+                    icon: {
+                        children: {},
+                        styles: {
+                            c: [
+                                "border-2",
+                                "text-red-400",
+                                "hover:md:border-4",
+                            ],
+                        },
                     },
                 },
-            },
-            styles: {
-                a: ["h-4", "bg-red-400", "hover:md:h-8"],
-                b: ["w-12", "hover:md:w-16"],
-            },
+                styles: {
+                    a: ["h-4", "bg-red-400", "hover:md:h-8"],
+                    b: ["w-12", "hover:md:w-16"],
+                },
+            });
+        });
+        const iconRegistrationNoProps = new Registration({
+            identifier: "icon",
+            props: {},
+            styles: s => ({
+                c: `border-2 text-red-400`,
+            }),
+            dependencies: {},
+            mappings: {},
+            importPath: "",
+        });
+        test("false no props", () => {
+            expect(() =>
+                iconRegistration.compile({})
+            ).toThrowErrorMatchingInlineSnapshot(
+                '"Passing props is required here."'
+            );
+        });
+        test("no props", () => {
+            expect(iconRegistrationNoProps.compile({})).toEqual({
+                children: {},
+                styles: {
+                    c: ["border-2", "text-red-400"],
+                },
+            });
+        });
+        test("no props with children", () => {
+            const registrationNoProps = new Registration({
+                identifier: "button",
+                props: {},
+                styles: s => ({
+                    a: `h-4 bg-red-400`,
+                    b: `w-16`,
+                }),
+                dependencies: {
+                    icon: iconRegistrationNoProps,
+                },
+                mappings: {
+                    icon: {},
+                },
+                importPath: "",
+            });
+            expect(registrationNoProps.compile({})).toEqual({
+                children: {
+                    icon: {
+                        children: {},
+                        styles: {
+                            c: ["border-2", "text-red-400"],
+                        },
+                    },
+                },
+                styles: {
+                    a: ["h-4", "bg-red-400"],
+                    b: ["w-16"],
+                },
+            });
         });
     });
-    test("CompileAll", () => {
+
+    describe("CompileAll", () => {
         const iconRegistration = new Registration({
             identifier: "icon",
             props: { sizes: ["xl", "2xl"], destructive: ["true", "false"] },
@@ -127,16 +190,40 @@ describe("Register", () => {
             mappings: {},
             importPath: "",
         });
-        expect(
-            iconRegistration.compileAll('{sizes: "xl", destructive: "true"}')
-        ).toEqual([
-            {
-                children: {},
-                styles: {
-                    c: ["border-2", "text-red-400"],
+        test("regular", () => {
+            expect(
+                iconRegistration.compileAll(
+                    '{sizes: "xl", destructive: "true"}'
+                )
+            ).toEqual([
+                {
+                    children: {},
+                    styles: {
+                        c: ["border-2", "text-red-400"],
+                    },
                 },
-            },
-        ]);
+            ]);
+        });
+        test("no props", () => {
+            const iconRegistration = new Registration({
+                identifier: "icon",
+                props: {},
+                styles: s => ({
+                    c: `border-2 text-red-400`,
+                }),
+                dependencies: {},
+                mappings: {},
+                importPath: "",
+            });
+            expect(iconRegistration.compileAll("{}")).toEqual([
+                {
+                    children: {},
+                    styles: {
+                        c: ["border-2", "text-red-400"],
+                    },
+                },
+            ]);
+        });
     });
 });
 
