@@ -4,7 +4,7 @@ import { button } from './src/lib/components/Button/registration.tdc';
 import { Manipulation } from '../../src/register';
 
 export default {
-	debug: false,
+	debug: true,
 	registrations: [icon, button],
 	tagNameDelimiter: '-',
 	tailwindConfigPath: './tailwind.config.ts',

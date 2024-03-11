@@ -5,15 +5,19 @@ import { dedent } from "ts-dedent";
 import { libraryName, shortLibraryName } from "./library.config";
 import { transformCode } from "./transforms";
 import { getGlobalWatcherSubscription } from "./utils";
+import { writeFile } from "node:fs/promises";
+import { WriteStream, createWriteStream } from "node:fs";
+import path from "path";
 
 function printDebug(
     filePath: string,
     fileType: string,
     data:
         | { code: string; transformed: string; type: "transform" }
-        | { id: string; resolved: string; type: "load" }
+        | { id: string; resolved: string; type: "load" },
+    debugPrinter: (log: string) => void = console.info
 ) {
-    console.info(dedent`
+    debugPrinter(dedent`
         -- DEBUG START-----------------------------------------------------------
 
         ${data.type}ed '${fileType}' file: '${filePath}'
@@ -32,6 +36,7 @@ function printDebug(
 
 export async function plugin(): Promise<Plugin> {
     const config = await getTransformConfig();
+    let logStream: WriteStream;
     return {
         name: `vite-plugin-${shortLibraryName}`,
         // makes sure we run before vite-plugin-svelte
@@ -47,7 +52,19 @@ export async function plugin(): Promise<Plugin> {
             server.watcher.on("add", handleFileChange);
             server.watcher.on("change", handleFileChange);
             server.watcher.on("unlink", unlinkFile);
+            const debugLogPath = path.resolve(
+                config.cwdFolderPath,
+                ".debug.tdc.txt"
+            );
 
+            if (logStream) logStream.end();
+            if (config.debug)
+                await writeFile(debugLogPath, "", {
+                    encoding: "utf8",
+                    flag: "w",
+                });
+            logStream = createWriteStream(debugLogPath, { flags: "a" });
+            //writeFile(,content,{encoding:'utf8',flag:'w'})
             async function handleFileChange(path: string) {
                 if (config.debug)
                     console.log(
@@ -63,6 +80,7 @@ export async function plugin(): Promise<Plugin> {
             }
         },
         async buildEnd() {
+            if (logStream) logStream.end();
             console.log("Closing filesystem watcher...");
             const w = getGlobalWatcherSubscription();
             if (w) await w.unsubscribe();
@@ -91,7 +109,8 @@ export async function plugin(): Promise<Plugin> {
                         code,
                         transformed: transformedCode.code,
                         type: "transform",
-                    }
+                    },
+                    (log: string) => logStream.write(log + "\n")
                 );
             }
             return transformedCode;
