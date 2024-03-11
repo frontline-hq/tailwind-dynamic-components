@@ -1,0 +1,226 @@
+-- DEBUG START-----------------------------------------------------------
+
+transformed '*.svelte' file: '/src/routes/+layout.svelte'
+
+-- INPUT -----------------------------------------------------------------------
+
+<script>
+	import './styles.css';
+</script>
+
+<slot />
+
+
+-- OUTPUT ----------------------------------------------------------------------
+
+<script>
+	import './styles.css';
+</script>
+
+<slot />
+
+
+-- TDC DEBUG END ------------------------------------------------------------
+-- DEBUG START-----------------------------------------------------------
+
+transformed '*.svelte' file: '/src/routes/+page.svelte'
+
+-- INPUT -----------------------------------------------------------------------
+
+<script>
+	const blue = '';
+</script>
+
+<!-- Disabled safelisting -->
+<tdc-icon tdc={{ size: 'xl', destructive: { default: true, md: false } }} />
+<tdc-button tdc={{ scale: 'sm', destructive: { default: true, lg: false } }} />
+
+
+-- OUTPUT ----------------------------------------------------------------------
+
+<script>import {TdcIcon} from "$lib/components/icon";
+import {TdcButton} from "$lib/components/button";
+
+	const blue = '';
+</script>
+
+<!-- Disabled safelisting -->
+<TdcIcon tdc={{"styles":{"c":["border-2","text-red-400","md:text-green-400"]},"children":{}}} />
+<TdcButton tdc={{"styles":{"a":["h-4","bg-red-400","lg:bg-green-400"],"b":["w-12"],"manipulatedB":["w-24"]},"children":{"icon":{"styles":{"c":["border-2","text-red-400","lg:text-green-400"]},"children":{}}}}} />
+
+
+-- TDC DEBUG END ------------------------------------------------------------
+-- DEBUG START-----------------------------------------------------------
+
+transformed '*.svelte' file: '/src/lib/components/Icon/Icon.svelte'
+
+-- INPUT -----------------------------------------------------------------------
+
+<script lang="ts">
+	import type { TdcProp } from '../../../../../../src/register';
+	import type { icon } from './registration.tdc';
+
+	interface $$Props extends HTMLElement {
+		tdc: TdcProp<typeof icon>;
+	}
+
+	export let tdc: $$Props['tdc'];
+</script>
+
+<div class={tdc.styles.c.join(' ')}>Hey there</div>
+
+
+-- OUTPUT ----------------------------------------------------------------------
+
+<script lang="ts">export let tdc;
+</script>
+
+<div class={tdc.styles.c.join(' ')}>Hey there</div>
+
+
+-- TDC DEBUG END ------------------------------------------------------------
+-- DEBUG START-----------------------------------------------------------
+
+transformed '*.svelte' file: '/src/lib/components/Button/Button.svelte'
+
+-- INPUT -----------------------------------------------------------------------
+
+<script lang="ts">
+	import type { TdcProp } from '../../../../../../src/register';
+	import type { button } from './registration.tdc';
+
+	interface $$Props extends HTMLElement {
+		tdc: TdcProp<typeof button>;
+	}
+
+	export let tdc: $$Props['tdc'];
+
+	console.log(tdc.styles.manipulatedB.join(' '));
+</script>
+
+<button class={tdc.styles.a.join(' ')}>Some button</button>
+
+
+-- OUTPUT ----------------------------------------------------------------------
+
+<script lang="ts">export let tdc;
+console.log(tdc.styles.manipulatedB.join(" "));
+</script>
+
+<button class={tdc.styles.a.join(' ')}>Some button</button>
+
+
+-- TDC DEBUG END ------------------------------------------------------------
+-- DEBUG START-----------------------------------------------------------
+
+transformed '*.svelte' file: '/src/routes/+layout.svelte'
+
+-- INPUT -----------------------------------------------------------------------
+
+<script>
+	import './styles.css';
+</script>
+
+<slot />
+
+
+-- OUTPUT ----------------------------------------------------------------------
+
+<script>
+	import './styles.css';
+</script>
+
+<slot />
+
+
+-- TDC DEBUG END ------------------------------------------------------------
+-- DEBUG START-----------------------------------------------------------
+
+transformed '*.svelte' file: '/src/routes/+page.svelte'
+
+-- INPUT -----------------------------------------------------------------------
+
+<script>
+	const blue = '';
+</script>
+
+<!-- Disabled safelisting -->
+<tdc-icon tdc={{ size: 'xl', destructive: { default: true, md: false } }} />
+<tdc-button tdc={{ scale: 'sm', destructive: { default: true, lg: false } }} />
+
+
+-- OUTPUT ----------------------------------------------------------------------
+
+<script>import {TdcIcon} from "$lib/components/icon";
+import {TdcButton} from "$lib/components/button";
+
+	const blue = '';
+</script>
+
+<!-- Disabled safelisting -->
+<TdcIcon tdc={{"styles":{"c":["border-2","text-red-400","md:text-green-400"]},"children":{}}} />
+<TdcButton tdc={{"styles":{"a":["h-4","bg-red-400","lg:bg-green-400"],"b":["w-12"],"manipulatedB":["w-24"]},"children":{"icon":{"styles":{"c":["border-2","text-red-400","lg:text-green-400"]},"children":{}}}}} />
+
+
+-- TDC DEBUG END ------------------------------------------------------------
+-- DEBUG START-----------------------------------------------------------
+
+transformed '*.svelte' file: '/src/lib/components/Icon/Icon.svelte'
+
+-- INPUT -----------------------------------------------------------------------
+
+<script lang="ts">
+	import type { TdcProp } from '../../../../../../src/register';
+	import type { icon } from './registration.tdc';
+
+	interface $$Props extends HTMLElement {
+		tdc: TdcProp<typeof icon>;
+	}
+
+	export let tdc: $$Props['tdc'];
+</script>
+
+<div class={tdc.styles.c.join(' ')}>Hey there</div>
+
+
+-- OUTPUT ----------------------------------------------------------------------
+
+<script lang="ts">export let tdc;
+</script>
+
+<div class={tdc.styles.c.join(' ')}>Hey there</div>
+
+
+-- TDC DEBUG END ------------------------------------------------------------
+-- DEBUG START-----------------------------------------------------------
+
+transformed '*.svelte' file: '/src/lib/components/Button/Button.svelte'
+
+-- INPUT -----------------------------------------------------------------------
+
+<script lang="ts">
+	import type { TdcProp } from '../../../../../../src/register';
+	import type { button } from './registration.tdc';
+
+	interface $$Props extends HTMLElement {
+		tdc: TdcProp<typeof button>;
+	}
+
+	export let tdc: $$Props['tdc'];
+
+	console.log(tdc.styles.manipulatedB.join(' '));
+</script>
+
+<button class={tdc.styles.a.join(' ')}>Some button</button>
+
+
+-- OUTPUT ----------------------------------------------------------------------
+
+<script lang="ts">export let tdc;
+console.log(tdc.styles.manipulatedB.join(" "));
+</script>
+
+<button class={tdc.styles.a.join(' ')}>Some button</button>
+
+
+-- TDC DEBUG END ------------------------------------------------------------
