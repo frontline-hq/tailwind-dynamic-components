@@ -1,3 +1,6 @@
+<script context="module">
+</script>
+
 <script lang="ts">
 	import type { TdcProp } from '../../../../../../src/register';
 	import type { button } from './registration.tdc';

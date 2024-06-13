@@ -1,6 +1,44 @@
 import { describe, expect, test } from "vitest";
-import { safelistFromCompiled } from "./safelisting";
+import { safelistFromCompiled, transpileSvelte } from "./safelisting";
 
+describe("transpileSvelte", () => {
+    test("simple", () => {
+        const transpileResult = transpileSvelte(`
+<div />
+`);
+        expect(transpileResult).toMatchInlineSnapshot(`
+          "
+          <div />
+          "
+        `);
+    });
+    test("script", () => {
+        const transpileResult = transpileSvelte(`
+<script lang="ts"></script>
+<div />
+`);
+        expect(transpileResult).toMatchInlineSnapshot(`
+          "
+          <script lang=\\"ts\\"></script>
+          <div />
+          "
+        `);
+    });
+    test("script and context module", () => {
+        const transpileResult = transpileSvelte(`
+<script lang="ts" context="module"></script>
+<script lang="ts"></script>
+<div />
+`);
+        expect(transpileResult).toMatchInlineSnapshot(`
+          "
+          <script lang=\\"ts\\" context=\\"module\\"></script>
+          <script lang=\\"ts\\"></script>
+          <div />
+          "
+        `);
+    });
+});
 describe("Safelist", () => {
     test("from compile", () => {
         const compileResult = {
