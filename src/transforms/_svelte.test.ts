@@ -76,4 +76,61 @@ describe("process svelte", () => {
           "
         `);
     });
+    test("transform with regular script tag", async () => {
+        const result = await transformSvelte(
+            getMockedConfig([mockedReg1, mockedReg2]),
+            `
+<script lang="ts"></script>
+<tdc-wrapper tdc={{}}>
+<tdc-icon tdc={{}}>
+<div></div>
+</tdc-icon>
+</tdc-wrapper>
+`
+        );
+        expect(result.code).toMatchInlineSnapshot(`
+          "
+          <script lang=\\"ts\\">import {TdcWrapper} from \\"@frontline-hq/tdc/Wrapper\\";
+          import {TdcIcon} from \\"@frontline-hq/tdc/Icon\\";
+          </script>
+          <TdcWrapper tdc={{\\"styles\\":{},\\"children\\":{}}}>
+          <TdcIcon tdc={{\\"styles\\":{},\\"children\\":{}}}>
+          <div></div>
+          </TdcIcon>
+          </TdcWrapper>
+          "
+        `);
+    });
+    test("transform with context module script tag", async () => {
+        const result = await transformSvelte(
+            getMockedConfig([mockedReg1, mockedReg2]),
+            `
+<script lang="ts" context="module"></script>
+
+<script lang="ts">
+   import "../app.css";
+</script>
+<tdc-wrapper tdc={{}}>
+<tdc-icon tdc={{}}>
+<div></div>
+</tdc-icon>
+</tdc-wrapper>
+`
+        );
+        expect(result.code).toMatchInlineSnapshot(`
+          "
+          <script lang=\\"ts\\" context=\\"module\\"></script>
+
+          <script lang=\\"ts\\">import {TdcWrapper} from \\"@frontline-hq/tdc/Wrapper\\";
+          import {TdcIcon} from \\"@frontline-hq/tdc/Icon\\";
+          import \\"../app.css\\";
+          </script>
+          <TdcWrapper tdc={{\\"styles\\":{},\\"children\\":{}}}>
+          <TdcIcon tdc={{\\"styles\\":{},\\"children\\":{}}}>
+          <div></div>
+          </TdcIcon>
+          </TdcWrapper>
+          "
+        `);
+    });
 });

@@ -5,7 +5,7 @@ transformed '*.svelte' file: '/src/routes/+layout.svelte'
 -- INPUT -----------------------------------------------------------------------
 
 <script>
-	import './styles.css';
+	import '../styles.css';
 </script>
 
 <slot />
@@ -14,7 +14,7 @@ transformed '*.svelte' file: '/src/routes/+layout.svelte'
 -- OUTPUT ----------------------------------------------------------------------
 
 <script>
-	import './styles.css';
+	import '../styles.css';
 </script>
 
 <slot />
@@ -85,6 +85,9 @@ transformed '*.svelte' file: '/src/lib/components/Button/Button.svelte'
 
 -- INPUT -----------------------------------------------------------------------
 
+<script context="module">
+</script>
+
 <script lang="ts">
 	import type { TdcProp } from '../../../../../../src/register';
 	import type { button } from './registration.tdc';
@@ -102,6 +105,9 @@ transformed '*.svelte' file: '/src/lib/components/Button/Button.svelte'
 
 
 -- OUTPUT ----------------------------------------------------------------------
+
+<script context="module">
+</script>
 
 <script lang="ts">export let tdc;
 console.log(tdc.styles.manipulatedB.join(" "));
@@ -118,7 +124,7 @@ transformed '*.svelte' file: '/src/routes/+layout.svelte'
 -- INPUT -----------------------------------------------------------------------
 
 <script>
-	import './styles.css';
+	import '../styles.css';
 </script>
 
 <slot />
@@ -127,7 +133,7 @@ transformed '*.svelte' file: '/src/routes/+layout.svelte'
 -- OUTPUT ----------------------------------------------------------------------
 
 <script>
-	import './styles.css';
+	import '../styles.css';
 </script>
 
 <slot />
@@ -198,6 +204,9 @@ transformed '*.svelte' file: '/src/lib/components/Button/Button.svelte'
 
 -- INPUT -----------------------------------------------------------------------
 
+<script context="module">
+</script>
+
 <script lang="ts">
 	import type { TdcProp } from '../../../../../../src/register';
 	import type { button } from './registration.tdc';
@@ -215,6 +224,9 @@ transformed '*.svelte' file: '/src/lib/components/Button/Button.svelte'
 
 
 -- OUTPUT ----------------------------------------------------------------------
+
+<script context="module">
+</script>
 
 <script lang="ts">export let tdc;
 console.log(tdc.styles.manipulatedB.join(" "));

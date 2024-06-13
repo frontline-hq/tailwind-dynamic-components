@@ -31,12 +31,13 @@ import type { ASTNode } from "ast-types";
 import type { Node } from "estree";
 import { shortLibraryName } from "../library.config";
 
-function transpileSvelte(code: string) {
-    const regex = /(?<=<script[^>]*>)[\S\s]*(?=<\/script[^>]*>)/g;
-    return code.replaceAll(
+export function transpileSvelte(code: string) {
+    const regex = /(?<=<script[^>]*>)[\S\s]*?(?=<\/script[^>]*>)/g;
+    const replaced = code.replaceAll(
         regex,
         match => transformSync(match, { loader: "ts" }).code
     );
+    return replaced;
 }
 
 function evaluateProps(evalString: string, registration: Registration) {
