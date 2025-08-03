@@ -1,7 +1,7 @@
 {
     "name": "@frontline-hq/tdc",
     "private": false,
-    "version": "0.0.29",
+    "version": "0.0.30",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
     "files": [
@@ -27,7 +27,7 @@
     "types": "./dist/index.d.ts",
     "scripts": {
         "dev": "vite --host",
-        "build": "rimraf dist && tsc && vite build && dts-bundle-generator --config ./dts-bundle-generator.config.ts",
+        "build": "rimraf dist && vite build && tsc",
         "test": "vitest",
         "test:coverage": "vitest --coverage",
         "lint:scripts": "eslint . --ext .ts",
@@ -61,13 +61,13 @@
         "prettier-plugin-svelte": "^3.1.2",
         "rimraf": "^5.0.5",
         "typescript": "^5.3.3",
-        "vite": "^4.5.1",
+        "vite": "^5.0.0",
         "vitest": "^0.34.6"
     },
     "dependencies": {
         "@parcel/watcher": "^2.4.0",
-        "@sveltejs/kit": "^1.30.3",
-        "@sveltejs/vite-plugin-svelte": "^3.0.1",
+        "@sveltejs/kit": "^2.0.0",
+        "@sveltejs/vite-plugin-svelte": "^3.0.0",
         "acorn": "^8.11.3",
         "ast-types": "^0.14.2",
         "esbuild": "^0.20.0",

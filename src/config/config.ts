@@ -1,11 +1,80 @@
 import path from "path";
-import { stat /* readFile */ } from "fs/promises";
+import { stat, readFile } from "fs/promises";
 import { pathToFileURL } from "url";
 /* import { VERSION } from "@sveltejs/kit"; */
-import type { Config as SvelteConfig } from "@sveltejs/kit";
+import type { SvelteConfig } from "@sveltejs/vite-plugin-svelte";
+
 import { shortLibraryName } from "../library.config";
 import { Manipulation, Registration, mergeManipulations } from "../register";
 import j from "jiti";
+
+type KitConfig = {
+    files?: {
+        /**
+         * a place to put static files that should have stable URLs and undergo no processing, such as `favicon.ico` or `manifest.json`
+         * @default "static"
+         */
+        assets?: string;
+        hooks?: {
+            /**
+             * The location of your client [hooks](https://svelte.dev/docs/kit/hooks).
+             * @default "src/hooks.client"
+             */
+            client?: string;
+            /**
+             * The location of your server [hooks](https://svelte.dev/docs/kit/hooks).
+             * @default "src/hooks.server"
+             */
+            server?: string;
+            /**
+             * The location of your universal [hooks](https://svelte.dev/docs/kit/hooks).
+             * @default "src/hooks"
+             * @since 2.3.0
+             */
+            universal?: string;
+        };
+        /**
+         * your app's internal library, accessible throughout the codebase as `$lib`
+         * @default "src/lib"
+         */
+        lib?: string;
+        /**
+         * a directory containing [parameter matchers](https://svelte.dev/docs/kit/advanced-routing#Matching)
+         * @default "src/params"
+         */
+        params?: string;
+        /**
+         * the files that define the structure of your app (see [Routing](https://svelte.dev/docs/kit/routing))
+         * @default "src/routes"
+         */
+        routes?: string;
+        /**
+         * the location of your service worker's entry point (see [Service workers](https://svelte.dev/docs/kit/service-workers))
+         * @default "src/service-worker"
+         */
+        serviceWorker?: string;
+        /**
+         * the location of the template for HTML responses
+         * @default "src/app.html"
+         */
+        appTemplate?: string;
+        /**
+         * the location of the template for fallback error responses
+         * @default "src/error.html"
+         */
+        errorTemplate?: string;
+    };
+};
+
+// copied from svelte config
+interface Config extends SvelteConfig {
+    /**
+     * SvelteKit options.
+     *
+     * @see https://svelte.dev/docs/kit/configuration
+     */
+    kit?: KitConfig;
+}
 
 export const configFileName = `${shortLibraryName}.config.ts` as const;
 
@@ -123,7 +192,7 @@ export async function getTransformConfig(
             pathToFileURL(
                 path.resolve(cwdFolderPath, "svelte.config.js")
             ).toString()
-        )) as { default: SvelteConfig };
+        )) as { default: Config };
         const files = {
             appTemplate: path.resolve(
                 cwdFolderPath,
@@ -142,11 +211,17 @@ export async function getTransformConfig(
         };
 
         const rootRoutesFolder = path.resolve(files.routes, "");
-
-        // TODO: find a more reliable way (https://github.com/sveltejs/kit/issues/9937)
-        const svelteKitVersion = (await import("@sveltejs/kit")).VERSION;
+        const svelteKitPkg = JSON.parse(
+            await readFile(
+                path.resolve(
+                    cwdFolderPath,
+                    "node_modules/@sveltejs/kit/package.json"
+                ),
+                "utf-8"
+            )
+        );
         svelteKitConfigData = {
-            version: svelteKitVersion,
+            version: svelteKitPkg.version,
             files,
             rootRoutesFolder,
         };
