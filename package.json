@@ -1,7 +1,7 @@
 {
     "name": "@frontline-hq/tdc",
     "private": false,
-    "version": "0.0.30",
+    "version": "0.0.31",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
     "files": [
@@ -73,7 +73,7 @@
         "esbuild": "^0.20.0",
         "estree-walker": "^3.0.3",
         "fast-glob": "^3.3.2",
-        "jiti": "^1.21.0",
+        "jiti": "^2.5.1",
         "lodash.get": "^4.4.2",
         "lodash.merge": "^4.6.2",
         "lodash.mergewith": "^4.6.2",
